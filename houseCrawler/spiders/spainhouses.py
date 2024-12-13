@@ -2,6 +2,7 @@ import scrapy
 import datetime
 import dateparser
 import traceback
+from houseCrawler.items import ImageItem
 
 class SpainhousesSpider(scrapy.Spider):
     name = "spainhouses"
@@ -11,7 +12,7 @@ class SpainhousesSpider(scrapy.Spider):
         "JOBDIR": "persistence/" + name,
         "ELASTICSEARCH_INDEX": "announcements_info_test",
         "DOWNLOADER_MIDDLEWARES": {
-            'houseCrawler.middlewares.SeleniumDownloadMiddleware': 800,
+            'houseCrawler.middlewares.SeleniumBaseDownloadMiddleware': 800,
         }
     }
     start_urls = [
@@ -64,6 +65,14 @@ class SpainhousesSpider(scrapy.Spider):
                 constructed_m2 = int(self.deleteSubstrings(features[constructed_m2_feature_index], ["Construida: ", ". ", "m²"]))
             construction_date = None #TODO see more listings to check if any has this info
             image_urls = None #response.css("div.imageCol img::attr(src)").getall() #This doesnt work with static request to the listing
+            img_number = 1
+            for image_url in image_urls:
+                yield ImageItem(
+                    image_url=image_url,
+                    image_name=f'{ref}_{img_number}',
+                    ref=ref
+                )
+                img_number = img_number + 1
             if image_urls is not None:
                 image_urls = ", ".join(image_urls)
         except Exception:

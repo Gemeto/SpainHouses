@@ -1,185 +1,69 @@
 from scrapy.crawler import CrawlerProcess
 from scrapy.utils.project import get_project_settings
 from scrapy.utils.log import configure_logging
-from elasticsearch import Elasticsearch
+from elasticsearchRepo import ElasticsearchRepo
+import zoneFilters as zf
+import config as cfg
 import importlib
 import multiprocessing
 
 spiders = [
     "idealista",
-    "pisos",
-    "properstar",
-    "spainhouses",
+    #"pisos",
+    #"properstar",
+    #"spainhouses",
     #Full webdriver spiders
     "fotocasa",
     "habitaclia",
 ]
-index_announcement_links = "announcement_links"
-index_announcements_info = "announcements_info"
-index_failed_urls = "failed_urls"
-mappings = dict(
-      index_announcements_info =
-      {
-            "settings": {
-                "number_of_shards": 1,
-                "number_of_replicas": 0
-            },
-            "mappings": {
-                "properties": {
-                    "@timestamp": {
-                        "type": "date"
-                    },
-                    "constructed_m2": {
-                    "type": "text",
-                        "fields": {
-                            "keyword": {
-                                "type": "keyword",
-                                "ignore_above": 256
-                            }
-                        }
-                    },
-                    "url": {
-                        "type": "text",
-                        "fields": {
-                            "keyword": {
-                                "type": "keyword",
-                                "ignore_above": 256
-                            }
-                        }
-                    },
-                    "list_url": {
-                        "type": "text",
-                        "fields": {
-                            "keyword": {
-                                "type": "keyword",
-                                "ignore_above": 256
-                            }
-                        }
-                    },
-                    "location": {
-                        "type": "text",
-                        "fields": {
-                            "keyword": {
-                                "type": "keyword",
-                                "ignore_above": 256
-                            }
-                        }
-                    },
-                    "platform": {
-                        "type": "text",
-                        "fields": {
-                            "keyword": {
-                                "type": "keyword",
-                                "ignore_above": 256
-                            }
-                        }
-                    },
-                    "price": {
-                        "type": "long"
-                    },
-                    "rooms": {
-                        "type": "text",
-                        "fields": {
-                            "keyword": {
-                                "type": "keyword",
-                                "ignore_above": 256
-                            }
-                        }
-                    },
-                    "title": {
-                        "type": "text",
-                        "fields": {
-                            "keyword": {
-                                "type": "keyword",
-                                "ignore_above": 256
-                            }
-                    }
-                    },
-                    "update_date": {
-                        "type": "date"
-                    }
-                }
-            }
-      },
-      index_failed_urls =
-        {
-            "settings": {
-                "number_of_shards": 1,
-                "number_of_replicas": 0
-            },
-            "mappings": {
-                "properties": {
-                    "@timestamp": {
-                        "type": "date"
-                    },
-                    "url": {
-                        "type": "text",
-                        "fields": {
-                            "keyword": {
-                                "type": "keyword",
-                                "ignore_above": 256
-                            }
-                        }
-                    },
-                    "exception_msg": {
-                         "type": "text",
-                         "fields": {
-                              "keyword": {
-                                   "type": "keyword",
-                                   "ignore_above": 256
-                              }
-                         }
-                    },
-                    "platform": {
-                        "type": "text",
-                        "fields": {
-                            "keyword": {
-                                "type": "keyword",
-                                "ignore_above": 256
-                            }
-                        }
-                    },
-                    "spider": {
-                        "type": "text",
-                        "fields": {
-                            "keyword": {
-                                "type": "keyword",
-                                "ignore_above": 256
-                            }
-                        }
-                    }
-                }
-            }
-        }
-)
+
+#Zone filters
+zone_filter_names = {
+    zf.ANDALUCIA: "Andalucia",
+    zf.ARAGON: "Aragon",
+    zf.CANTABRIA: "Cantabria",
+    zf.CASTILLALEON: "Castilla y Leon",
+    zf.CASTILLALAMANCHA: "Castilla-La Mancha",
+    zf.CATALUÑA: "Cataluna",
+    zf.NAVARRA: "Navarra",
+    zf.VALENCIA: "Comunidad Valenciana",
+    zf.MADRID: "Madrid",
+    zf.EXTREMADURA: "Extremadura",
+    zf.GALICIA: "Galicia",
+    zf.BALEARES: "Islas Baleares",
+    zf.CANARIAS: "Islas Canarias",
+    zf.RIOJA: "La Rioja",
+    zf.EUSKADI: "Pais Vasco",
+    zf.ASTURIAS: "Asturias",
+    zf.MURCIA: "Murcia",
+}
 
 def main():
-    multiprocessing.Pool(len(spiders)).map(runSpiderThread, spiders)
+    print("+" + "-"*25 + "+")
+    print("| Opciones " + " "*16 + "|")
+    print("+" + "-"*25 + "+")
+    for i, option in zone_filter_names.items():
+         print(f"| {i}. {option}" + " "*(25 - len(f"{i}. {option}")) + "|")
+    print("+" + "-"*25 + "+")
+    zoneFilter = int(input("Selecciona una zona de entre las opciones disponibles: "))
+    numSpiders = len(spiders)
+    multiprocessing.Pool(numSpiders).starmap(runSpiderThread, zip(spiders, [zoneFilter]*numSpiders))
 
-def runSpiderThread(spider):
-    es = Elasticsearch(
-        [
-            {'host': 'localhost', 'port': 9200, "scheme": "https"}
-        ],
-        basic_auth=('elastic', 'TESTPASS') #TODO Set as docker var to avoid showing credentials on version control
-    )
-    create_db_index(es, index_announcements_info, mappings["index_announcements_info"])
-    create_db_index(es, index_failed_urls, mappings["index_failed_urls"])
+def runSpiderThread(spider, zoneFilter):
+    repository = ElasticsearchRepo(cfg.ELASTICSEARCH_USER, cfg.ELASTICSEARCH_PASS)
+
     settings = get_project_settings()
     configure_logging(settings)
     process = CrawlerProcess(settings)
+
     try:
         module = importlib.import_module(f"houseCrawler.spiders.{spider}")
         className = getattr(module, spider.capitalize() + "Spider")
-        process.crawl(className, es=es)
+        process.crawl(className, repository=repository, zoneFilter=zoneFilter)
     except Exception as e:
         print(f"No se ha podido cargar el spider {spider} debido a un error: {e}")
 
     process.start()
-
-def create_db_index(es, index_name, mappings):
-    if not es.indices.exists(index=index_name):
-            es.indices.create(index=index_name, body=mappings)
 
 if __name__ == '__main__':
     main()

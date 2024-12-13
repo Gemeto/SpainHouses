@@ -103,13 +103,11 @@ class HousecrawlerDownloaderMiddleware:
         spider.logger.info("Spider opened: %s" % spider.name)
 
 from scrapy.http import HtmlResponse
-import undetected_chromedriver as uc
+from seleniumbase import SB
+import urllib3
 import time
 import random
 import logging
-
-from seleniumbase import SB
-import urllib3
 
 class SeleniumBaseDownloadMiddleware: #Custom middleware based on scrapy-selenium middleware, in order to use seleniumbase
     def __init__(self, sb):

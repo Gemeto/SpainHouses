@@ -4,7 +4,6 @@ from houseCrawler.items import ImageItem
 from scrapy.exceptions import DropItem
 import scrapy
 import os
-
 from datetime import datetime
 from elasticsearch import Elasticsearch, helpers
 from six import string_types
@@ -29,9 +28,11 @@ class ListingImagesPipeline(ImagesPipeline):
         listing_folder = os.path.join(spider_folder, item.get("ref"))
         file_ext = os.path.splitext(request.url)[1]
         file_ext = file_ext.split("?")[0]
+        if file_ext is None:
+            file_ext = ".jpg"
         return f'{listing_folder}/{item.get("image_name")}{file_ext}'
     
-class ElasticSearchPipeline(object):
+class ElasticSearchPipeline(object): #TODO Maybe try to convert this to RepoPipeline more generic to be able to switch repos easly
     settings = None
     es = None
     items_buffer = []

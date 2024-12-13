@@ -3,6 +3,7 @@ import datetime
 import dateparser
 import random
 import traceback
+from houseCrawler.items import ImageItem
 
 class PisosSpider(scrapy.Spider):
     name = "pisos"
@@ -10,9 +11,7 @@ class PisosSpider(scrapy.Spider):
     index_failed_urls = "failed_urls"
     custom_settings = {
         "JOBDIR": "persistence/" + name,
-        "DOWNLOADER_MIDDLEWARES": {
-            'houseCrawler.middlewares.SeleniumDownloadMiddleware': 800,
-        }
+        "IMAGES_STORE": 'Images'
     }
     start_urls = [
         "https://www.pisos.com/",
@@ -48,7 +47,7 @@ class PisosSpider(scrapy.Spider):
         self.state["processedUrls"].add(response.url)
         for announcement_url in response.css("div.ad-preview::attr(data-lnk-href)").getall():
             if announcement_url not in self.state["processedUrls"]:
-                yield response.follow(announcement_url, callback=self.parseAnnouncement, errback=self.handleError, cb_kwargs=dict(listUrl=response.request.url), meta={"selenium": True})
+                yield response.follow(announcement_url, callback=self.parseAnnouncement, errback=self.handleError, cb_kwargs=dict(listUrl=response.request.url))
 
         next_page = response.css("div.pagination__next a::attr(href)").get()
         if next_page is not None and next_page not in self.state["processedUrls"]:
@@ -65,7 +64,7 @@ class PisosSpider(scrapy.Spider):
                 price = int(self.deleteSubstrings(price, [".", "€"]))
             location = response.css("div.details__block p:first-of-type::text").get()
             energyCalification = response.css("span.energy-certificate__tag::text").get()
-            update_date = dateparser.parse(response.css("p.last-update__date::text").get().replace("Anuncio actualizado el ", "")).isoformat()
+            update_date = dateparser.parse(response.css("p.last-update__date::text").get().split()[-1]).isoformat()
             energyConsumption = response.css("div.energy-certificate__data span:nth-of-type(2) span::text").get()
             owner = response.css("p.owner-info__name a::text").get()
             features = response.css("div.features__feature")
@@ -80,15 +79,23 @@ class PisosSpider(scrapy.Spider):
             ref = None
             ref_feature_index = next((i for i, x in enumerate(features) if x.css("span.features__label::text").get().startswith("Referencia: ")), None)
             if ref_feature_index is not None:
-                ref = features[ref_feature_index].css("span.features__value::text").get()
+                ref = features[ref_feature_index].css("span.features__value::text").get().replace("/", "--") #Replacing slashes to avoid creating subdirectories when saving the images
             construction_date = None
             construction_date_feature_index = next((i for i, x in enumerate(features) if x.css("span.features__label::text").get().startswith("Antigüedad: ")), None)
             if construction_date_feature_index is not None:
                 cosntruction_date_string = features[construction_date_feature_index].css("span.features__value::text").get()
                 if "Entre" in cosntruction_date_string:
                     construction_date = dateparser.parse("Hace " + cosntruction_date_string.split()[-2] + "años").isoformat()
-            image_urls = response.css("div[media-type='Photo'] div picture img::attr(src)").getall()
-            image_urls = image_urls + response.css("div[media-type='Photo'] div picture img::attr(data-src)").getall()
+            image_urls = response.css("div[data-media-type='Photo'] div picture img::attr(src)").getall()
+            image_urls = image_urls + response.css("div[data-media-type='Photo'] div picture img::attr(data-src)").getall()
+            img_number = 1
+            for image_url in image_urls:
+                yield ImageItem(
+                    image_url=image_url,
+                    image_name=f'{ref}_{img_number}',
+                    ref=ref
+                )
+                img_number = img_number + 1
             if image_urls is not None:
                 image_urls = ", ".join(image_urls)
         except Exception:

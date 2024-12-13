@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(0, "..")
+import config as cfg
+
 BOT_NAME = "houseCrawler"
 SPIDER_MODULES = ["houseCrawler.spiders"]
 NEWSPIDER_MODULE = "houseCrawler.spiders"
@@ -19,6 +23,6 @@ IMAGES_STORE = "Images"
 REQUEST_FINGERPRINTER_IMPLEMENTATION = "2.7"
 FEED_EXPORT_ENCODING = "utf-8"
 
-ELASTICSEARCH_SERVERS = ['https://elastic:TESTPASS@localhost:9200'] #TODO Change localhost in future and harcoded credentials
+ELASTICSEARCH_SERVERS = [f"https://{cfg.ELASTICSEARCH_USER}:{cfg.ELASTICSEARCH_PASS}@localhost:9200"]
 ELASTICSEARCH_BUFFER_LENGTH = 1
-ELASTICSEARCH_INDEX = 'announcements_info'
+ELASTICSEARCH_INDEX = "announcements_info"

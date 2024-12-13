@@ -3,6 +3,7 @@ import datetime
 import dateparser
 import random
 import traceback
+from houseCrawler.items import ImageItem
 
 class ProperstarSpider(scrapy.Spider):
     name = "properstar"
@@ -11,7 +12,7 @@ class ProperstarSpider(scrapy.Spider):
     custom_settings = {
         "JOBDIR": "persistence/" + name,
         "DOWNLOADER_MIDDLEWARES": {
-            'houseCrawler.middlewares.SeleniumDownloadMiddleware': 800,
+            'houseCrawler.middlewares.SeleniumBaseDownloadMiddleware': 800,
         }
     }
     start_urls = [
@@ -72,6 +73,14 @@ class ProperstarSpider(scrapy.Spider):
             if construction_date_feature_index is not None:
                 construction_date = dateparser.parse(features[construction_date_feature_index].css("span.property-value::text").get()).isoformat()
             image_urls = None #As static content can only access 3 first images, should load dynamic or reverse engeneer the load of images per listing
+            img_number = 1
+            for image_url in image_urls:
+                yield ImageItem(
+                    image_url=image_url,
+                    image_name=f'{ref}_{img_number}',
+                    ref=ref
+                )
+                img_number = img_number + 1
             if image_urls is not None:
                 image_urls = ", ".join(image_urls)
         except Exception:

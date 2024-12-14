@@ -4,7 +4,7 @@ import dateparser
 import sys
 from houseCrawler.items import ImageItem
 sys.path.insert(0, "../..")
-from utils import saveUrlException, deleteSubstrings
+from utils import saveUrlException, deleteSubstrings, getLastRequestTime
 import zoneFilters as zf
 
 class FotocasaSpider(scrapy.Spider):
@@ -13,7 +13,10 @@ class FotocasaSpider(scrapy.Spider):
 
     #Spider settings
     custom_settings = {
-        "DOWNLOAD_DELAY": 6,
+        #"DOWNLOAD_DELAY": 6,
+        "DOWNLOAD_SLOTS": {
+            "fotocasa.es": {"delay": 6}
+        },
         "DOWNLOADER_MIDDLEWARES": {
             'houseCrawler.middlewares.SeleniumBaseDownloadMiddleware': 800,
         },
@@ -46,15 +49,26 @@ class FotocasaSpider(scrapy.Spider):
         zf.MURCIA: ["murcia"],
     }
 
+    #Condition to stop list scrolling
+    listScrollUntilCondition = "document.querySelectorAll('li.sui-MoleculePagination-item:last-child a').length > 0 && document.querySelectorAll('div.sui-PerfDynamicRendering-placeholder').length == 0"
+
     def start_requests(self):
+        #yield scrapy.Request("https://www.fotocasa.es/es/comprar/vivienda/palma-de-mallorca/parking-terraza-patio-no-amueblado/184496262/d", callback=self.parseAnnouncement, cb_kwargs=dict(listUrl="https:://www.fotocasa.es/"), 
+        #            meta={
+        #                "selenium": True, 
+        #                "scrollTo": "section.sui-SectionInfo:last-of-type",
+        #                "scrollWaits": 1
+        #            }
+        #        )
+        
         if hasattr(self, "zoneFilter"):
             for zone in self.zone_filters[self.zoneFilter]:
                 yield scrapy.Request(f"https://www.fotocasa.es/es/comprar/viviendas/{zone}-provincia/todas-las-zonas/l?sortType=publicationDate", callback=self.parse, 
                 meta={
                     "selenium": True, 
                     "scrollTo": "article:last-of-type",
-                    "scrollUntil": "document.querySelectorAll('div.sui-PerfDynamicRendering-placeholder').length == 0",
-                    "scrollWaits": 1
+                    "scrollUntil": self.listScrollUntilCondition,
+                    "scrollWaits": 1,
                 }
             )
         else:
@@ -63,12 +77,14 @@ class FotocasaSpider(scrapy.Spider):
                     meta={
                         "selenium": True, 
                         "scrollTo": "article:last-of-type",
-                        "scrollUntil": "document.querySelectorAll('div.sui-PerfDynamicRendering-placeholder').length == 0",
-                        "scrollWaits": 1
+                        "scrollUntil": self.listScrollUntilCondition,
+                        "scrollWaits": 1,
                     }
                 )
 
+
     def parse(self, response):
+        lastRequestTime = getLastRequestTime(response)
         try:
             for announcement in response.css("article"):
                 announcement_url = announcement.css("a:first-of-type::attr(href)").get()
@@ -76,7 +92,8 @@ class FotocasaSpider(scrapy.Spider):
                     meta={
                         "selenium": True, 
                         "scrollTo": "section.sui-SectionInfo:last-of-type",
-                        "scrollWaits": 1
+                        "scrollWaits": 1,
+                        "lastRequestTime": lastRequestTime
                     }
                 )
             next_page = response.css("li.sui-MoleculePagination-item:last-child a::attr(href)").get()
@@ -85,8 +102,9 @@ class FotocasaSpider(scrapy.Spider):
                     meta={
                         "selenium": True, 
                         "scrollTo": "article:last-of-type", 
-                        "scrollUntil": "document.querySelectorAll('div.sui-PerfDynamicRendering-placeholder').length == 0",
-                        "scrollWaits": 1
+                        "scrollUntil": self.listScrollUntilCondition,
+                        "scrollWaits": 1,
+                        "lastRequestTime": lastRequestTime
                     }
                 )
         except Exception:
@@ -98,10 +116,14 @@ class FotocasaSpider(scrapy.Spider):
             announcementData["listUrl"] = listUrl
             announcementData["title"] = response.css("h1:first-of-type::text").get()
             announcementData["description"] = response.css("p.re-DetailDescription::text").get()
-            announcementData["price"] = int(deleteSubstrings(response.css("span.re-DetailHeader-price::text").get(), " .€"))
+            announcementData["price"] = None
+            priceStr = response.css("span.re-DetailHeader-price::text").get()
+            if "consultar" not in priceStr:
+                announcementData["price"] = int(deleteSubstrings(response.css("span.re-DetailHeader-price::text").get(), " .€"))
             announcementData["location"] = response.css("h2.re-DetailMap-address::text").get()
             if announcementData["location"] is not None:
-                announcementData["location"] = announcementData["location"] + response.css("h2.re-DetailMap-address span::text").get()
+                if response.css("h2.re-DetailMap-address span::text").get() is not None:
+                    announcementData["location"] = announcementData["location"] + response.css("h2.re-DetailMap-address span::text").get()
             else:
                 announcementData["location"] = response.css("h2.re-DetailMap-address span::text").get()
             features = response.css("ul.re-DetailHeader-features li")
@@ -130,7 +152,8 @@ class FotocasaSpider(scrapy.Spider):
                     construction_date_string_splitted = construction_date_string.split()
                     construction_date_string = " ".join([construction_date_string_splitted[-2], construction_date_string_splitted[-1]])
                 announcementData["cosntruction_date"] = dateparser.parse("Hace " + construction_date_string).isoformat()
-            yield scrapy.Request(response.request.url + "&isGalleryOpen=true", callback=self.parseAnnouncementImages, cb_kwargs=dict(announcementData=announcementData),
+            openGalleryQuery = "&isGalleryOpen=true" if "?" in response.request.url else "?isGalleryOpen=true"
+            yield scrapy.Request(response.request.url + openGalleryQuery, callback=self.parseAnnouncementImages, cb_kwargs=dict(announcementData=announcementData),
                 meta={
                     "selenium": True,
                     "scrollScript": "document.querySelectorAll(\"li[id*='image'] div.re-DetailMultimediaImage-container\")[document.querySelectorAll(\"li[id*='image'] div.re-DetailMultimediaImage-container\").length-1].scrollIntoView()",
@@ -153,7 +176,7 @@ class FotocasaSpider(scrapy.Spider):
                     image_name=f'{ref}_{img_number}',
                     ref=ref,
                     spiderName=self.name,
-                    repository=self.repository,
+                    #repository=self.repository,
                 )
                 img_number = img_number + 1
             if image_urls is not None:

@@ -4,7 +4,7 @@ import dateparser
 import sys
 from houseCrawler.items import ImageItem
 sys.path.insert(0, "../..")
-from utils import saveUrlException, deleteSubstrings
+from utils import saveUrlException, deleteSubstrings, getLastRequestTime
 import zoneFilters as zf
 
 class HabitacliaSpider(scrapy.Spider):
@@ -13,11 +13,13 @@ class HabitacliaSpider(scrapy.Spider):
     
     #Spider settings
     custom_settings = {
-        "DOWNLOAD_DELAY": 6,
-        "DOWNLOADER_MIDDLEWARES": {
-            'houseCrawler.middlewares.SeleniumBaseDownloadMiddleware': 800,
+        "DOWNLOAD_SLOTS": {
+            "habitaclia.com": {"delay": 3}
         },
-        "IMAGES_STORE": 'Images'
+        "DOWNLOADER_MIDDLEWARES": {
+            "houseCrawler.middlewares.SeleniumBaseDownloadMiddleware": 800,
+        },
+        "IMAGES_STORE": "Images"
     }
 
     #Spider starting urls
@@ -53,28 +55,33 @@ class HabitacliaSpider(scrapy.Spider):
                 yield response.follow(zone_url, dont_filter=True, callback=self.parseZoneLinks, meta={"selenium": True})
 
     def parseZoneLinks(self, response):
+        lastRequestTime = getLastRequestTime(response)
         zone_url = response.css("div.ver-todo-zona a::attr(href)").get()
         if zone_url is not None:
-            yield response.follow(zone_url + "?ordenar=mas_recientes", dont_filter=True, callback=self.parseZoneList, meta={"selenium": True})
+            yield response.follow(zone_url + "?ordenar=mas_recientes", dont_filter=True, callback=self.parseZoneList, meta={"selenium": True, "lastRequestTime": lastRequestTime})
         else:
             for zone_link in response.css("div#enlacesmapa ul.verticalul li a::attr(href)").getall():
-                yield response.follow(zone_link, dont_filter=True, callback=self.parseZoneLinks, meta={"selenium": True})
+                yield response.follow(zone_link, dont_filter=True, callback=self.parseZoneLinks, meta={"selenium": True, "lastRequestTime": lastRequestTime})
 
         if response.css("div#enlacesmapa ul.verticalul li a::attr(href)").getall() is None:
-            yield response.follow(response.css("h2 a::attr(href)").get() + "?ordenar=mas_recientes", dont_filter=True, callback=self.parseZoneList, meta={"selenium": True})
+            yield response.follow(response.css("h2 a::attr(href)").get() + "?ordenar=mas_recientes", dont_filter=True, callback=self.parseZoneList, meta={"selenium": True, "lastRequestTime": lastRequestTime})
 
     def parseZoneList(self, response):
+        lastRequestTime = getLastRequestTime(response)
         for announcement_link in response.css("article.js-list-item::attr(data-href)").getall():
-            yield response.follow(announcement_link, dont_filter=True, callback=self.parseAnnouncement, meta={"selenium": True}, cb_kwargs=dict(listUrl=response.request.url))
+            yield response.follow(announcement_link, dont_filter=True, callback=self.parseAnnouncement, meta={"selenium": True, "lastRequestTime": lastRequestTime}, cb_kwargs=dict(listUrl=response.request.url))
 
         next_page = response.css("li.next a::attr(href)").get()
         if next_page is not None:
-            yield response.follow(next_page, callback=self.parseZoneList, meta={"selenium": True})
+            yield response.follow(next_page, callback=self.parseZoneList, meta={"selenium": True, "lastRequestTime": lastRequestTime})
 
     def parseAnnouncement(self, response, listUrl):
         try:
             title = response.css("h1:first-of-type::text").get()
-            price = int(deleteSubstrings(response.css("div.price span[itemprop=price]::text").get(), " .€"))
+            price = None
+            priceStr = response.css("div.price span[itemprop=price]::text").get()
+            if priceStr is not None:
+                price = int(deleteSubstrings(priceStr, " .€"))
             location = response.css("article.location h4 a::attr(title)").get()
             if location is not None:
                 location = location.replace("  ", "") + response.css("article.location h4::text").get().replace("  ", "")
@@ -91,9 +98,11 @@ class HabitacliaSpider(scrapy.Spider):
                 constructed_m2 = int(deleteSubstrings(distribution[constructed_m2_distribution_index], ["Superficie ", "m"]))
             ref = response.css("h4.subtitle::text").get()
             if ref is not None:
-                ref = deleteSubstrings(ref, ["Referencia del anuncio habitaclia/", ":"])
+                ref = deleteSubstrings(ref, ["Referencia del anuncio habitaclia/", ":", " "])
             energyCalification = response.css("div.rating::attr(class)").get()
-            energyConsumption = deleteSubstrings(response.css("div.rating-box:first-of-type::text").get(), ["Consumo:", "\n", " "])
+            energyConsumption = response.css("div.rating-box:first-of-type::text").get()
+            if energyConsumption is not None:
+                energyConsumption = deleteSubstrings(energyConsumption, ["Consumo:", "\n", " "])
             if(energyCalification is not None):
                 energyCalification = energyCalification.replace("rating c-", "")
                 energyConsumption = energyConsumption.replace(energyCalification, "")
@@ -117,7 +126,7 @@ class HabitacliaSpider(scrapy.Spider):
                     image_name=f'{ref}_{img_number}',
                     ref=ref,
                     spiderName=self.name,
-                    repository=self.repository,
+                    #repository=self.repository,
                 )
                 img_number = img_number + 1
             if image_urls is not None:

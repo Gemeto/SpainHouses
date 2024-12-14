@@ -19,3 +19,9 @@ def deleteSubstrings(string, substrings):
     for str in substrings:
         string = string.replace(str, "")
     return string
+
+def getLastRequestTime(response):
+        lastRequestTime = 0
+        if "requestTime" in response.request.meta:
+            lastRequestTime = response.request.meta["requestTime"]
+        return lastRequestTime

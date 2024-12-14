@@ -16,7 +16,10 @@ class IdealistaSpider(scrapy.Spider):
 
     #Spider settings
     custom_settings = {
-        "DOWNLOAD_DELAY": 6,
+        #"DOWNLOAD_DELAY": 6,
+        "DOWNLOAD_SLOTS": {
+            "idealista.com": {"delay": 5}
+        },
         "DOWNLOADER_MIDDLEWARES": {
             'houseCrawler.middlewares.SeleniumBaseDownloadMiddleware': 800,
         },
@@ -53,6 +56,14 @@ class IdealistaSpider(scrapy.Spider):
         zf.ASTURIAS: "asturias",
         zf.MURCIA: "murcia-provincia",
     }
+
+    #def start_requests(self):
+    #    yield scrapy.Request("https://www.idealista.com/inmueble/106176756/", callback=self.parseAnnouncement, cb_kwargs=dict(listUrl="https://www.idealista.com/"), 
+    #                meta={
+    #                    "selenium": True,
+    #                    "scrollTo": "div.images-slider"
+    #                }
+    #            )
 
     def parse(self, response):
         zone_links = response.css("ul.locations-list__links") #Selling
@@ -119,7 +130,7 @@ class IdealistaSpider(scrapy.Spider):
                     image_name=f'{ref}_{img_number}',
                     ref=ref,
                     spiderName=self.name,
-                    repository=self.repository,
+                    #repository=self.repository,
                 )
                 img_number = img_number + 1
             if image_urls is not None:

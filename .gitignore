@@ -1,6 +1,5 @@
 env
 config.py
 downloaded_files
-__pycache__
 **/__pycache__
 Images

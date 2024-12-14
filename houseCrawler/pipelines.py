@@ -24,11 +24,10 @@ class ListingImagesPipeline(ImagesPipeline):
             yield scrapy.Request(image_url)
 
     def file_path(self, request, response=None, info=None, *, item=None):
-        spider_folder = info.spider.name + "Images"
-        listing_folder = os.path.join(spider_folder, item.get("ref"))
+        listing_folder = item.get("ref")
         file_ext = os.path.splitext(request.url)[1]
         file_ext = file_ext.split("?")[0]
-        if file_ext is None:
+        if file_ext == "":
             file_ext = ".jpg"
         return f'{listing_folder}/{item.get("image_name")}{file_ext}'
     

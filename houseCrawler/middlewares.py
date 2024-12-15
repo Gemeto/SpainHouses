@@ -145,11 +145,11 @@ class SeleniumBaseDownloadMiddleware: #Custom middleware based on scrapy-seleniu
         if "DOWNLOAD_SLOTS" in spider.settings:
             for domain, options in spider.settings["DOWNLOAD_SLOTS"].items():
                 if domain in request.url:
-                    delay = options["delay"] * randomDelayMagnitude
+                    delay = int(options["delay"] * randomDelayMagnitude)
                     break
         #Calculating the final delay removing the laste rquest time from the total delay
         if "lastRequestTime" in request.meta:
-            delay = delay - request.meta["lastRequestTime"]
+            delay = int(delay - request.meta["lastRequestTime"])
         if delay > 0:
             time.sleep(delay)
         #Requesting the URL
@@ -176,10 +176,8 @@ class SeleniumBaseDownloadMiddleware: #Custom middleware based on scrapy-seleniu
         if "scrollTo" in request.meta or "scrollScript" in request.meta:
             if "scrollScript" in request.meta and request.meta["scrollScript"]:
                 self.sb.cdp.evaluate(request.meta["scrollScript"])
-            else:
+            elif self.sb.cdp.evaluate(f"document.querySelectorAll('{request.meta["scrollTo"]}').length > 0"):
                 self.sb.cdp.scroll_into_view(request.meta["scrollTo"])
-            if "scrollWaits" in request.meta:
-                        time.sleep(request.meta["scrollWaits"])
 
     def spider_closed(self):
         self.sb.disconnect()

@@ -15,7 +15,7 @@ class FotocasaSpider(scrapy.Spider):
     #Spider settings
     custom_settings = {
         "DOWNLOAD_SLOTS": {
-            "fotocasa.es": {"delay": 2}
+            "www.fotocasa.es": {"delay": 2}
         },
         "DOWNLOADER_MIDDLEWARES": {
             'houseCrawler.middlewares.SeleniumBaseDownloadMiddleware': 800,

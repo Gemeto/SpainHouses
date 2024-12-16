@@ -15,7 +15,7 @@ class HabitacliaSpider(scrapy.Spider):
     #Spider settings
     custom_settings = {
         "DOWNLOAD_SLOTS": {
-            "habitaclia.com": {"delay": 2}
+            "www.habitaclia.com": {"delay": 2}
         },
         "DOWNLOADER_MIDDLEWARES": {
             "houseCrawler.middlewares.SeleniumBaseDownloadMiddleware": 800,
@@ -104,7 +104,7 @@ class HabitacliaSpider(scrapy.Spider):
     def parseAnnouncement(self, response, listUrl):
         try:
             title = response.css("h1:first-of-type::text").get()
-            description = response.css("p.detail-description::text").get
+            description = response.css("p.detail-description::text").get()
             update_date = dateparser.parse(response.css("time::text").get()).isoformat()
             distribution = response.css("article.has-aside:nth-of-type(2) ul li::text").getall()
             features = response.css("article.has-aside:nth-of-type(3) ul li").getall()
@@ -155,7 +155,6 @@ class HabitacliaSpider(scrapy.Spider):
             construction_date_index = next((i for i, x in enumerate(features) if x.startswith("Año construcción")), None)
             if construction_date_index is not None:
                 cosntruction_date = datetime.parse(int(features[construction_date_index].replace("Año construcción ", "")), 1, 1).isoformat()
-
             image_urls = response.css("div.ficha_foto img::attr(src)").getall()
             img_number = 1
             for image_url in image_urls:
@@ -181,7 +180,6 @@ class HabitacliaSpider(scrapy.Spider):
                 "rooms": rooms,
                 "constructed_m2": constructed_m2,
                 "ref": ref,
-                "type": "selling",
                 "energy_calification": energyCalification,
                 "energy_consumption": energyConsumption if energyConsumption is not None else "",
                 "construction_date": cosntruction_date,
@@ -200,7 +198,8 @@ class HabitacliaSpider(scrapy.Spider):
                 url = f"{url}&pmin={self.min_price_filter}"
             if hasattr(self, "max_price_filter"):
                 url = f"{url}&pmax={self.max_price_filter}"
-            if hasattr(self, "max_surface_filter"):
-                url = f"{url}&m2={self.max_surface_filter}"
+            if hasattr(self, "max_size_filter"):
+                url = f"{url}&m2={self.max_size_filter}"
 
             return url
+

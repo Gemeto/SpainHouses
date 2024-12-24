@@ -1,5 +1,4 @@
 import sys
-print("ASJHDSAOIHDOSADJPOSAJDPSAJDSAKDJKDLSJALKDJSALKDJL")
 sys.path.append("../")
 from configuration import projectSettings, secrets
 

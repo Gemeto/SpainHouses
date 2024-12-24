@@ -4,7 +4,7 @@ from scrapy.utils.log import configure_logging
 import importlib
 import multiprocessing
 import sys
-sys.path.append("./")
+sys.path.append("../")
 import constants.zoneFilters as zf
 import constants.announcementTypeFilters as tf
 

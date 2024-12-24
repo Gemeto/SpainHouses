@@ -49,7 +49,8 @@ class HabitacliaSpider(scrapy.Spider):
                     url = self.target_announcement_url
                     yield scrapy.Request(url, callback=self.parseAnnouncement, meta={"selenium": True}, cb_kwargs=dict(listUrl="https://www.habitaclia.com/"))
             else:
-                yield scrapy.Request(start_url, callback=self.parse)
+                url = self.start_url
+                yield scrapy.Request(url, callback=self.parse)
         except Exception as e:
             saveUrlException(url)
 

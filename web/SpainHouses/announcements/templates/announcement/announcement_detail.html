@@ -1,239 +1,11 @@
+{% extends 'announcement/base.html' %}
 {% load static %}
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ announcement.title }}</title>
-    <style>
-        body {
-            font-family: 'Arial', sans-serif;
-            line-height: 1.6;
-            color: #333;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f5f5f5;
-        }
+{% block css %}
+    <link rel="stylesheet" href="{% static 'css/announcements/detail.css' %}">
+{% endblock %}
 
-        .property-header {
-            text-align: center;
-            margin-bottom: 2rem;
-        }
-
-        h1 {
-            color: #2c3e50;
-            margin-bottom: 0.5rem;
-        }
-
-        .price {
-            font-size: 1.5rem;
-            color: #27ae60;
-            font-weight: bold;
-        }
-
-        .gallery {
-            display: grid;
-            grid-template-columns: 3fr 1fr;
-            gap: 1rem;
-            margin-bottom: 2rem;
-        }
-
-        .main-image {
-            width: 100%;
-            height: 400px;
-            object-fit: cover;
-            border-radius: 8px;
-        }
-
-        .thumbnails {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-            height: 400px;
-            overflow-y: auto;
-        }
-
-        .thumbnail {
-            width: 100%;
-            height: 120px;
-            object-fit: cover;
-            cursor: pointer;
-            border-radius: 4px;
-            transition: opacity 0.3s ease;
-        }
-
-        .thumbnail:hover {
-            opacity: 0.8;
-        }
-
-        .property-details {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            background-color: #fff;
-            padding: 1.5rem;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            margin-bottom: 2rem;
-        }
-
-        .detail {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .detail-icon {
-            font-size: 1.2rem;
-            color: #3498db;
-        }
-
-        .description {
-            background-color: #fff;
-            padding: 1.5rem;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            margin-bottom: 2rem;
-        }
-
-        .agent-info {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            background-color: #fff;
-            padding: 1.5rem;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            margin-bottom: 2rem;
-        }
-
-        .agent-photo {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            object-fit: cover;
-        }
-
-        .cta-button {
-            display: block;
-            width: auto;
-            padding: 0.5rem;
-            background-color: #3498db;
-            color: #fff;
-            text-align: center;
-            text-decoration: none;
-            font-size: 1.2rem;
-            border-radius: 1rem;
-            transition: background-color 0.3s ease;
-            margin-bottom: 2rem;
-        }
-
-        .cta-button:hover {
-            background-color: #2980b9;
-        }
-
-        /* New CSS styles for Similar Offers section */
-        .similar-offers {
-            background-color: #fff;
-            padding: 1.5rem;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            margin-bottom: 2rem;
-        }
-
-        .similar-offers h2 {
-            margin-bottom: 1rem;
-            color: #2c3e50;
-        }
-
-        .offers-slider {
-            display: flex;
-            overflow-x: auto;
-            gap: 1rem;
-            padding-bottom: 1rem;
-            scroll-behavior: smooth;
-        }
-
-        .offer-card {
-            flex: 0 0 300px;
-            background-color: #f9f9f9;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s ease;
-        }
-
-        .offer-card:hover {
-            transform: translateY(-5px);
-        }
-
-        .offer-image {
-            width: 100%;
-            height: 200px;
-            object-fit: cover;
-        }
-
-        .offer-details {
-            padding: 1rem;
-        }
-
-        .offer-title {
-            font-size: 1.1rem;
-            font-weight: bold;
-            margin-bottom: 0.5rem;
-        }
-
-        .offer-price {
-            color: #27ae60;
-            font-weight: bold;
-        }
-
-        .slider-controls {
-            display: flex;
-            justify-content: center;
-            gap: 1rem;
-            margin-top: 1rem;
-        }
-
-        .slider-button {
-            background-color: #3498db;
-            color: #fff;
-            border: none;
-            padding: 0.5rem 1rem;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-        }
-
-        .slider-button:hover {
-            background-color: #2980b9;
-        }
-
-        @media (max-width: 768px) {
-            .gallery {
-                grid-template-columns: 1fr;
-            }
-
-            .thumbnails {
-                flex-direction: row;
-                overflow-x: auto;
-                height: 
-            }
-
-            .thumbnail {
-                width: 120px;
-                flex-shrink: 0;
-            }
-
-            .offer-card {
-                flex: 0 0 250px;
-            }
-        }
-    </style>
-</head>
-<body>
+{% block content %}
     <header class="property-header">
         <h1>{{ announcement.title }}</h1>
         <p class="price">{{ announcement.price }} €</p>
@@ -272,7 +44,33 @@
     </section>
 
     <canvas id="myChart" width="800" height="400"></canvas>
+
+    <a href="{{ announcement.url }}" class="cta-button">Ver la oferta original</a>
+
+    <section class="similar-offers">
+        <h2>Similar Offers</h2>
+        <div class="offers-slider" id="offersSlider">
+            {% for similar in similar_offers %}
+            <div class="offer-card" onclick="location.href='{{ similar.announcementid }}'">
+                <img src="{% static '/images/' %}{{similar.ref}}/{{ similar.image_urls }}" alt="{{ similar.title }}" class="offer-image">
+                <div class="offer-details">
+                    <h3 class="offer-title">{{ similar.title }}</h3>
+                    <p class="offer-price">{{ similar.title }} €</p>
+                    <p>{{ similar.rooms }} rooms, {{ similar.constructed_m2 }} m2</p>
+                    <a href="{{ similar.url }}" class="cta-button">Ver la oferta original</a>
+                </div>
+            </div>
+            {% endfor %}
+            {% if not similar_offers %}
+                <p>No se han encontrado ofertas similares.</p>
+            {% endif %}
+        </div>
+    </section>
+{% endblock %}
+
+{% block scripts %}
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <script>
         const ctx = document.getElementById('myChart').getContext('2d');
         const myChart = new Chart(ctx, {
@@ -297,28 +95,6 @@
         });
     </script>
 
-    <a href="{{ announcement.url }}" class="cta-button">Ver la oferta original</a>
-
-    <section class="similar-offers">
-        <h2>Similar Offers</h2>
-        <div class="offers-slider" id="offersSlider">
-            {% for similar in similar_offers %}
-            <div class="offer-card" onclick="location.href='{{ similar.announcementid }}'">
-                <img src="{% static '/images/' %}{{similar.ref}}/{{ similar.image_urls }}" alt="{{ similar.title }}" class="offer-image">
-                <div class="offer-details">
-                    <h3 class="offer-title">{{ similar.title }}</h3>
-                    <p class="offer-price">{{ similar.title }} €</p>
-                    <p>{{ similar.rooms }} rooms, {{ similar.constructed_m2 }} m2</p>
-                    <a href="{{ similar.url }}" class="cta-button">Ver la oferta original</a>
-                </div>
-            </div>
-            {% endfor %}
-            {% if not similar_offers %}
-                <p>No se han encontrado ofertas similares.</p>
-            {% endif %}
-        </div>
-    </section>
-
     <script>
         const mainImage = document.getElementById('mainImage');
         const thumbnails = document.querySelectorAll('.thumbnail');
@@ -330,5 +106,4 @@
             });
         });
     </script>
-</body>
-</html>
+{% endblock %}

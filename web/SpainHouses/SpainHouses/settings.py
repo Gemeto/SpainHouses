@@ -71,7 +71,7 @@ TEMPLATES = [
         },
     },
 ]
-STATICFILES_DIRS = [os.path.join(BASE_DIR, '../../data')]
+STATICFILES_DIRS = [os.path.join(BASE_DIR, '../../data'), os.path.join(BASE_DIR, 'static')]
 
 WSGI_APPLICATION = 'SpainHouses.wsgi.application'
 

@@ -1,0 +1,10 @@
+scrapy==2.11.2
+elasticsearch==8.16.0
+psycopg2==2.9.10
+dateparser==1.2.0
+seleniumbase==4.33.5
+pillow==11.0.0
+schedule==1.2.2
+tensorflow==2.18.0
+scikit-learn==1.6.0
+django==5.1.4

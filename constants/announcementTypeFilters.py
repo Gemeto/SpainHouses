@@ -1,0 +1,5 @@
+MIN = 1
+MAX = 2
+
+VENTA = 1
+ALQUILER = 2

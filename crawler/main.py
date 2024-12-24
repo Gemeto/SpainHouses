@@ -1,10 +1,12 @@
 from scrapy.crawler import CrawlerProcess
 from scrapy.utils.project import get_project_settings
 from scrapy.utils.log import configure_logging
-import constants.zoneFilters as zf
-import constants.announcementTypeFilters as tf
 import importlib
 import multiprocessing
+import sys
+sys.path.append("./")
+import constants.zoneFilters as zf
+import constants.announcementTypeFilters as tf
 
 spiders = [
     "idealista",

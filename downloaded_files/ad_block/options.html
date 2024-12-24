@@ -1,0 +1,36 @@
+<!DOCTYPE HTML>
+<html>
+    <head>
+        <title>SimpleBlock - Options</title>
+        <script src="options.js"></script>
+    </head>
+    <body>
+        <p>
+        <select id="filterSelector" size=20></select>
+        <br/>
+        <button id="roeButton">Remove/edit selected filter</button>
+        </p>
+        <p>
+        <input type="text" id="newFilter"/ >
+        <button id="addNewButton">Add to filters</button>
+        </p>
+        <p>
+        <button id="disableButton">Disable blocking</button>
+        <button id="enableButton">Enable blocking</button>
+        </p>
+        <p>
+        <textarea id="importExportFilters"></textarea>
+        <br/>
+        <button id="importButton">Import filters from JSON</button>
+        <button id="exportButton">Export filters as JSON</button>
+        </p>
+        <p>
+        <button id="sortButton">Sort filters</button>
+        <button id="restoreDefaultsButton">Restore defaults</button>
+        </p>
+        <p>
+        <input type="checkbox" id="webRTCBox"/>
+        Hide private addresses from WebRTC/ICE/STUN
+        </p>
+    </body>
+</html>

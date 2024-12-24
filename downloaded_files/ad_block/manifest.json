@@ -1,0 +1,23 @@
+{
+  "name": "SimpleBlock",
+  "version": "0.6",
+  "manifest_version": 2,
+  "description": "A simple ad-blocker.",
+  "browser_action": {
+    "browser_style": true,
+    "default_icon": "enabled.png"
+  },
+  "background": {
+    "scripts": ["default_filters.js", "block.js", "imagedata.js"]
+  },
+  "options_ui": {
+    "page": "options.html",
+    "chrome_style": true
+  },
+  "icons": {
+     "16": "enabled.png",
+     "48": "enabled_48.png"
+  },
+  "permissions": ["http://*/*", "https://*/*", "ws://*/*", "wss://*/*", "webRequest", "webRequestBlocking", "storage", "privacy"],
+  "incognito": "spanning"
+}

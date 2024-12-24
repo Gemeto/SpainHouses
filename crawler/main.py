@@ -99,15 +99,13 @@ def main():
     max_size_filter = int(max_size_filter)
     if max_size_filter < min_size_filter:
         wrongOptionSelected()
-
-    announcement_type_filter = int(announcement_type_filter)
-    zone_filter = int(zone_filter)
+    
     num_spiders = len(spiders)
     with multiprocessing.Pool(num_spiders) as pool:
         try:
             pool.starmap(runSpiderThread,
                 zip(
-                    spiders, 
+                    spiders,
                     [zone_filter]*num_spiders,
                     [announcement_type_filter]*num_spiders,
                     [min_price_filter]*num_spiders,

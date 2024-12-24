@@ -21,7 +21,8 @@ class IdealistaSpider(scrapy.Spider):
         },
         "DOWNLOADER_MIDDLEWARES": {
             'realEstateCrawler.middlewares.SeleniumBaseDownloadMiddleware': 1,
-        }
+        },
+        "JOBDIR": "jobs/" + name
     }
     #Spider starting urls
     start_url = "https://www.idealista.com"
@@ -112,7 +113,7 @@ class IdealistaSpider(scrapy.Spider):
                             url = (zone_link.replace("/municipios", "") + "/con-precio-hasta_"+str(max_price_filter)+",precio-desde_"+str(price_filter)
                             +",metros-cuadrados-mas-de_"+str(size_filter)+",metros-cuadrados-menos-de_"+str(max_size_filter)
                             +"/?ordenado-por=fecha-publicacion-desc")
-                            yield response.follow(url, dont_filter=True, callback=self.parseZoneAnnouncementsList)
+                            yield scrapy.Request(response.urljoin(url), priority=1, callback=self.parseZoneAnnouncementsList)
                             
                             price_filter += self.price_filter_interval
                         size_filter += self.size_filter_interval
@@ -123,7 +124,7 @@ class IdealistaSpider(scrapy.Spider):
         try:
             for announcement in response.css("article.item"):
                 announcement_link = announcement.css("a.item-link::attr(href)").get()
-                yield response.follow(announcement_link, callback=self.parseAnnouncement, cb_kwargs=dict(listUrl=response.request.url), 
+                yield scrapy.Request(response.urljoin(announcement_link), priority=3, callback=self.parseAnnouncement, cb_kwargs=dict(listUrl=response.request.url),
                     meta={
                         "selenium": True, 
                         "scrollTo": "div.images-slider"
@@ -132,7 +133,7 @@ class IdealistaSpider(scrapy.Spider):
 
             next_page = response.css("li.next a::attr(href)").get()
             if next_page is not None:
-                yield response.follow(next_page, callback=self.parseZoneAnnouncementsList)
+                yield scrapy.Request(response.urljoin(next_page), priority=2, callback=self.parseZoneAnnouncementsList)
         except Exception:
             saveUrlException(response.request.url)
 

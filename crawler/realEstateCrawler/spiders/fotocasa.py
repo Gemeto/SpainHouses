@@ -19,7 +19,8 @@ class FotocasaSpider(scrapy.Spider):
         },
         "DOWNLOADER_MIDDLEWARES": {
             'realEstateCrawler.middlewares.SeleniumBaseDownloadMiddleware': 1,
-        }
+        },
+        "JOBDIR": "jobs/" + name
     }
 
     #Spider starting urls
@@ -67,7 +68,7 @@ class FotocasaSpider(scrapy.Spider):
                 if hasattr(self, "zone_filter"):
                     for zone in self.zone_filters[self.zone_filter]:
                         url = self.getUrlWithFilters(f"https://www.fotocasa.es/es/comprar/viviendas/{zone}-provincia/todas-las-zonas/l?sortType=publicationDate")
-                        yield scrapy.Request(url, callback=self.parse, 
+                        yield scrapy.Request(url, callback=self.parse, priority=1,
                             meta={
                                 "selenium": True,
                                 "scrollTo": self.list_scroll_selector,
@@ -92,7 +93,7 @@ class FotocasaSpider(scrapy.Spider):
             last_request_time = getLastRequestTime(response)
             for announcement in response.css("article"):
                 announcement_url = announcement.css("a:first-of-type::attr(href)").get()
-                yield response.follow(announcement_url, callback=self.parseAnnouncement, cb_kwargs=dict(listUrl=response.request.url), 
+                yield scrapy.Request(response.urljoin(announcement_url), priority=3, callback=self.parseAnnouncement, cb_kwargs=dict(listUrl=response.request.url), 
                     meta={
                         "selenium": True,
                         "scrollTo": self.announcement_scroll_selector,
@@ -113,7 +114,7 @@ class FotocasaSpider(scrapy.Spider):
                 next_page_url = splitUrl[0] + next_page_str + splitUrl[-1].replace(f"{next_page_number - 1}?", "?")
 
             if next_page_url is not None:
-                yield response.follow(next_page_url, callback=self.parse, 
+                yield scrapy.Request(response.urljoin(next_page_url), priority=2, callback=self.parse, 
                     meta={
                         "selenium": True, 
                         "scrollTo": self.list_scroll_selector, 

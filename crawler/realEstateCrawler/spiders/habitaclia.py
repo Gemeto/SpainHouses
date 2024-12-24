@@ -16,7 +16,8 @@ class HabitacliaSpider(scrapy.Spider):
     custom_settings = {
         "DOWNLOADER_MIDDLEWARES": {
             "realEstateCrawler.middlewares.SeleniumBaseDownloadMiddleware": 1,
-        }
+        },
+        "JOBDIR": "jobs/" + name
     }
 
     #Spider starting urls
@@ -61,31 +62,31 @@ class HabitacliaSpider(scrapy.Spider):
                     zone_url = f"/alquiler-vivienda-en-{zone}/buscador.htm"
                 else:
                     zone_url = f"/comprar-vivienda-en-{zone}/buscador.htm"
-                yield response.follow(zone_url, callback=self.parseZoneLinks, meta={"selenium": True})
+                yield scrapy.Request(response.urljoin(zone_url), priority=1, callback=self.parseZoneLinks, meta={"selenium": True})
 
     def parseZoneLinks(self, response):
         try:
             zone_url = response.css("div.ver-todo-zona a::attr(href)").get()
             if zone_url is not None:
                 url = self.getUrlWithFilters(zone_url + "?ordenar=mas_recientes")
-                yield response.follow(url, callback=self.parseZoneList, meta={"selenium": True})
+                yield scrapy.Request(response.urljoin(url), priority=2, callback=self.parseZoneList, meta={"selenium": True})
             else:
                 for zone_link in response.css("div#enlacesmapa ul.verticalul li a::attr(href)").getall():
-                    yield response.follow(zone_link, callback=self.parseZoneLinks, meta={"selenium": True})
+                    yield scrapy.Request(response.urljoin(zone_link), priority=1, callback=self.parseZoneLinks, meta={"selenium": True})
             
             if response.css("div#enlacesmapa ul.verticalul li a::attr(href)").getall() is None:
-                yield response.follow(url, callback=self.parseZoneList, meta={"selenium": True})
+                yield scrapy.Request(response.urljoin(url), priority=2, callback=self.parseZoneList, meta={"selenium": True})
         except Exception as e:
             saveUrlException(response.request.url)
 
     def parseZoneList(self, response):
         try:
             for announcement_link in response.css("article.js-list-item::attr(data-href)").getall():
-                yield response.follow(announcement_link, callback=self.parseAnnouncement, meta={"selenium": True}, cb_kwargs=dict(listUrl=response.request.url))
+                yield scrapy.Request(response.urljoin(announcement_link), priority=3, callback=self.parseAnnouncement, meta={"selenium": True}, cb_kwargs=dict(listUrl=response.request.url))
 
             next_page = response.css("li.next a::attr(href)").get()
             if next_page is not None:
-                yield response.follow(next_page, callback=self.parseZoneList, meta={"selenium": True})
+                yield scrapy.Request(response.urljoin(next_page), priority=2, callback=self.parseZoneList, meta={"selenium": True})
         except Exception as e:
             saveUrlException(response.request.url)
 
@@ -93,7 +94,7 @@ class HabitacliaSpider(scrapy.Spider):
         try:
             announcement_urls = response.css("section.typologies-all a[title='Ver anuncio']::attr(href)").getall()
             for announcement_url in announcement_urls:
-                yield response.follow(announcement_url, callback=self.parseAnnouncement, meta={"selenium": True}, cb_kwargs=dict(listUrl=response.request.url))
+                yield scrapy.Request(response.urljoin(announcement_url), priority=4, callback=self.parseAnnouncement, meta={"selenium": True}, cb_kwargs=dict(listUrl=response.request.url))
             
             if len(announcement_urls) == 0:
                 title = response.css("h1:first-of-type::text").get()

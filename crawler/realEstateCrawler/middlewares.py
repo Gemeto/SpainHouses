@@ -180,4 +180,9 @@ class SeleniumBaseDownloadMiddleware: #Custom middleware based on scrapy-seleniu
                 self.sb.cdp.scroll_into_view(request.meta["scrollTo"])
 
     def spider_closed(self):
+        if self.sb.driver is not None:
+            #Closing the selenium opened windows
+            self.sb.driver.quit()
+            
+        #Disconnecting the selenium instances
         self.sb.disconnect()

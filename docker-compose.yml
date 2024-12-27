@@ -1,0 +1,40 @@
+services:
+
+  web:
+    build:
+      context: .
+      dockerfile: ./web/SpainHouses/Dockerfile
+    ports:
+      - "8000:8000"
+    command: python manage.py runserver
+    volumes:
+      - ./data:/data
+    depends_on:
+      - db
+    profiles:
+      - web
+
+  crawler:
+    build:
+      context: .
+      dockerfile: ./crawler/Dockerfile
+    ports:
+      - "6023:6023"
+    command: python main.py
+    volumes:
+      - ./data:/data
+    depends_on:
+      - db
+    profiles:
+      - crawler
+
+  db:
+    image: postgres
+    ports: 
+      - "5432:5432"
+    environment: 
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      PGDATA: /var/lib/postgresql/data
+    volumes:
+      - /data/postgres:/var/lib/postgresql/data

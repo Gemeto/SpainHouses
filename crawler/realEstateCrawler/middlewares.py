@@ -105,8 +105,6 @@ class RealestatecrawlerDownloaderMiddleware:
 from scrapy.http import HtmlResponse
 from seleniumbase import SB
 import urllib3
-import time
-import random
 import logging
 
 class SeleniumBaseDownloadMiddleware: #Custom middleware based on scrapy-selenium middleware, in order to use seleniumbase
@@ -134,24 +132,6 @@ class SeleniumBaseDownloadMiddleware: #Custom middleware based on scrapy-seleniu
         #Checking if selenium must be used for the current request
         if "selenium" not in request.meta or not request.meta["selenium"]:
             return None
-        #Delay of the request based on the spider config
-        initRequestTime = time.time()
-        #Calculating the total delay
-        randomDelayMagnitude = 1
-        if "RANDOMIZE_DOWNLOAD_DEALY" in spider.settings and spider.settings["RANDOMIZE_DOWNLOAD_DEALY"]:
-            randomDelayMagnitude = random.uniform(0.5, 1.5)
-        if "DOWNLOAD_DELAY" in spider.settings:
-            delay = spider.settings["DOWNLOAD_DELAY"] * randomDelayMagnitude
-        if "DOWNLOAD_SLOTS" in spider.settings:
-            for domain, options in spider.settings["DOWNLOAD_SLOTS"].items():
-                if domain in request.url:
-                    delay = int(options["delay"] * randomDelayMagnitude)
-                    break
-        #Calculating the final delay removing the laste rquest time from the total delay
-        if "lastRequestTime" in request.meta:
-            delay = int(delay - request.meta["lastRequestTime"])
-        if delay > 0:
-            time.sleep(delay)
         #Requesting the URL
         self.sb.activate_cdp_mode(request.url)
         #Scrolling the webpage if scroll is configured
@@ -161,9 +141,6 @@ class SeleniumBaseDownloadMiddleware: #Custom middleware based on scrapy-seleniu
                 self.scroll(request)
         #Returning the full response to the spider
         body = self.sb.cdp.get_page_source()
-        #Calculating the total time this request took
-        requestTime = int(time.time() - initRequestTime)
-        request.meta["requestTime"] = requestTime
         #Returning the response to the spider
         return HtmlResponse(
             request.url,

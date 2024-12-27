@@ -52,7 +52,7 @@ def main():
     for i, option in announcement_type_filter_names.items():
          print(f"| {i}. {option}" + " "*(25 - len(f"{i}. {option}")) + "|")
     print("+" + "-"*25 + "+")
-    announcement_type_filter = input("Selecciona una zona de entre las opciones disponibles: ")
+    announcement_type_filter = input("Selecciona una de las opciones disponibles: ")
     if not announcement_type_filter.isdigit():
         wrongOptionSelected()
     announcement_type_filter = int(announcement_type_filter)
@@ -145,4 +145,4 @@ if __name__ == '__main__':
     try:
         main()
     except KeyboardInterrupt:
-        print("Proceso interrumpido por el usuario")
+        print("/nProceso interrumpido por el usuario")

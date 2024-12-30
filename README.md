@@ -73,6 +73,10 @@ Frameworks:
 Libraries:
 * Tensorflow
 * scikit-learn
+* seleniumbase
+* psycopg2
+* dateparser
+* pillow
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 

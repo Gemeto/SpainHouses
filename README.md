@@ -119,7 +119,7 @@ To launch this tools you'll need to install:
 <!-- USAGE EXAMPLES -->
 ## Usage
 
-Launch modules with docker compose
+* Launch modules with docker compose
 	Launch only the db service (Minimum docker container required to run the crawler)
 	```sh
 	docker compose --profile db up
@@ -132,7 +132,7 @@ Launch modules with docker compose
 	```sh
 	docker compose --profile comparator up
 	```
-Execute the crawler module (You must be inside './crawler' folder)
+* Execute the crawler module (You must be inside './crawler' folder)
 	```sh
 	python main.py
 	```

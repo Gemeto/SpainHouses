@@ -1,4 +1,6 @@
 env
 .env
-data/**
+data/images
+data/image_embeddings
+data/postgres/**
 **/__pycache__

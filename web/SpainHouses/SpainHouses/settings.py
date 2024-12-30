@@ -11,14 +11,17 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 from pathlib import Path
+from dotenv import load_dotenv
 import os
 import sys
 sys.path.append("../..")
-from configuration import secrets
+from configuration import projectSettings
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+#Loading the dotenv file to read the constants
+load_dotenv(dotenv_path=projectSettings.ENV_FILE_PATH)
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
@@ -82,11 +85,11 @@ WSGI_APPLICATION = 'SpainHouses.wsgi.application'
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": secrets.POSTGRES_DB,
-        "USER": secrets.POSTGRES_USERNAME,
-        "PASSWORD": secrets.POSTGRES_PASSWORD,
-        "HOST": secrets.POSTGRES_HOSTNAME,
-        "PORT": secrets.POSTGRES_PORT,
+        "NAME": os.getenv('POSTGRES_DB'),
+        "USER": os.getenv('POSTGRES_USER'),
+        "PASSWORD": os.getenv('POSTGRES_PASSWORD'),
+        "HOST": os.getenv('POSTGRES_HOST'),
+        "PORT": os.getenv('POSTGRES_PORT'),
     }
 }
 

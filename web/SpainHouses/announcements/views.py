@@ -104,8 +104,8 @@ class AnnouncementListView(generic.ListView):
         #queryset = queryset.filter(rooms__gte=self.request.GET.get('energy_consumption', 0))
 
         for announcement in queryset:
-            if os.path.exists(f"../../{projectSettings.IMAGES_PATH}/{announcement.ref}"):
-                image_urls = os.listdir(f"../../{projectSettings.IMAGES_PATH}/{announcement.ref}")
+            if os.path.exists(f"{projectSettings.IMAGES_PATH}/{announcement.ref}"):
+                image_urls = os.listdir(f"{projectSettings.IMAGES_PATH}/{announcement.ref}")
                 announcement.image_urls = image_urls[0]
             else:
                 announcement.image_urls = None
@@ -115,8 +115,8 @@ class AnnouncementListView(generic.ListView):
 class AnnouncementDetailView(generic.DetailView):
     model = Announcement
     template_name = 'announcement/announcement_detail.html'
-    image_features_path = f'../../{projectSettings.IMAGE_FEATURES_PATH}/features.npy'
-    image_ids_path = f'../../{projectSettings.IMAGE_FEATURES_PATH}/ids.npy'
+    image_features_path = f'{projectSettings.IMAGE_FEATURES_PATH}/features.npy'
+    image_ids_path = f'{projectSettings.IMAGE_FEATURES_PATH}/ids.npy'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -142,14 +142,14 @@ class AnnouncementDetailView(generic.DetailView):
             context["similar_offers"] = similars
 
         #Adding announcement image paths to the context
-        if os.path.exists(f"../../{projectSettings.IMAGES_PATH}/{self.object.ref}"):
-            context["announcement_images"] = os.listdir(f"../../{projectSettings.IMAGES_PATH}/{self.object.ref}")
+        if os.path.exists(f"{projectSettings.IMAGES_PATH}/{self.object.ref}"):
+            context["announcement_images"] = os.listdir(f"{projectSettings.IMAGES_PATH}/{self.object.ref}")
 
         #Adding announcement historic data to the context
         context["announcements"] = Announcement.objects.filter(ref=self.object.ref).order_by("timestamp")
 
         for offer in context.get("similar_offers", []):
-            image_urls = os.listdir(f"../../{projectSettings.IMAGES_PATH}/{offer.ref}")
+            image_urls = os.listdir(f"{projectSettings.IMAGES_PATH}/{offer.ref}")
             if len(image_urls) > 0:
                 offer.image_urls = image_urls[0]
             else:

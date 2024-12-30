@@ -6,13 +6,24 @@ services:
       dockerfile: ./web/SpainHouses/Dockerfile
     ports:
       - "8000:8000"
-    command: python manage.py runserver
+    command: python manage.py runserver 0.0.0.0:8000
     volumes:
       - ./data:/data
     depends_on:
       - db
     profiles:
       - web
+      
+  comparator:
+    build:
+      context: .
+      dockerfile: ./imageFeatureExtractor/Dockerfile
+    command: python imageFeatureExtractor.py
+    volumes:
+      - ./data:/data
+    profiles:
+      - comparator
+    runtime: nvidia
 
   crawler:
     build:
@@ -32,9 +43,17 @@ services:
     image: postgres
     ports: 
       - "5432:5432"
-    environment: 
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+    environment:
       PGDATA: /var/lib/postgresql/data
     volumes:
-      - /data/postgres:/var/lib/postgresql/data
+      - ./configuration/dbInit:/docker-entrypoint-initdb.d/
+      - ./data/postgres:/var/lib/postgresql/data
+    healthcheck:
+        test: pg_isready -d ${POSTGRES_DB} -U ${POSTGRES_USER}
+        interval: 10s
+        timeout: 5s
+        retries: 5
+    profiles:
+      - db
+      - web
+      - crawler

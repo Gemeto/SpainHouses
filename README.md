@@ -125,21 +125,22 @@ To launch this tools you'll need to install:
 ## Usage
 
 * Launch modules with docker compose
-	Launch only the db service (Minimum docker container required to run the crawler)
+	* Launch only the db service
 	```sh
 	docker compose --profile db up
 	```
-	Launch the web module
+	* Launch the web module with db service
 	```sh
 	docker compose --profile web up
 	```
-	Launch the image feature extractor module
+	* Launch the image feature extractor module with db service
 	```sh
 	docker compose --profile comparator up
 	```
-* Execute the crawler module (You must be inside './crawler' folder)
+* Execute the crawler module (docker compose db service is REQUIRED)
 	```sh
-	python main.py
+ 	cd./crawler
+	python ./main.py
 	```
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 

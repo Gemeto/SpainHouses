@@ -51,7 +51,6 @@ def append_to_npy(file_path, new_data):
     np.save(file_path, combined_data)
 
 # Setup logging
-print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
 logging.basicConfig(level=logging.INFO)
 
 # Paths and settings

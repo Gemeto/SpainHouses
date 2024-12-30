@@ -13,7 +13,7 @@
 .main-image {
     width: 100%;
     height: 400px;
-    object-fit: cover;
+    object-fit: contain;
     border-radius: 8px;
 }
 
@@ -28,7 +28,7 @@
 .thumbnail {
     width: 100%;
     height: 120px;
-    object-fit: cover;
+    object-fit: contain;
     cursor: pointer;
     border-radius: 4px;
     transition: opacity 0.3s ease;
@@ -52,6 +52,7 @@
 .detail {
     display: flex;
     align-items: center;
+	justify-content: center;
     gap: 0.5rem;
 }
 
@@ -83,7 +84,7 @@
     width: 80px;
     height: 80px;
     border-radius: 50%;
-    object-fit: cover;
+    object-fit: contain;
 }
 
 .similar-offers {
@@ -123,7 +124,7 @@
 .offer-image {
     width: 100%;
     height: 200px;
-    object-fit: cover;
+    object-fit: contain;
 }
 
 .offer-details {

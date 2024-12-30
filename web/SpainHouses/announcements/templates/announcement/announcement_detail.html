@@ -8,11 +8,11 @@
 {% block content %}
     <header class="property-header">
         <h1>{{ announcement.title }}</h1>
-        <p class="price">{{ announcement.price }} €</p>
+        <h2 class="price">{{ announcement.price }} €</h2>
     </header>
 
     <section class="gallery">
-        <img src="{% static '/images/' %}{{announcement.ref}}/{{announcement_images.0}}" alt="Main view of the house" class="main-image" id="mainImage">
+        <img src="{% static '/images/' %}{{announcement.ref}}/{{announcement_images.0}}" alt="Inmueble ofertado" class="main-image" id="mainImage">
         <div class="thumbnails">
             {% for img in announcement_images %}
                 <img src="{% static '/images/' %}{{announcement.ref}}/{{ img }}" class="thumbnail">

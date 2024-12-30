@@ -1,7 +1,5 @@
 env
 .env
-data/images
-data/image_embeddings
-data/postgres/**
+data/**
+!data/.gitkeep
 **/__pycache__
-!data/postgres/.gitkeep

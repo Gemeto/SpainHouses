@@ -86,6 +86,7 @@ Here you can find the prerequisites needed and the installation and usage guides
 ### Prerequisites
 
 To launch this tools you'll need to install:
+* Google Chrome
 * Python 3.12
 * Docker desktop
 

@@ -108,22 +108,23 @@ import urllib3
 import logging
 
 class SeleniumBaseDownloadMiddleware: #Custom middleware based on scrapy-selenium middleware, in order to use seleniumbase
-    def __init__(self, sb):
-        self.sb = sb
+    
+    def __init__(self):
+        with SB(uc=True, headless=True, ad_block=True) as sb:
+                self.sb = sb
         #Disabling some logging that is not really useful if you're not debugging
         logging.getLogger('selenium').setLevel(logging.WARNING)
         logging.getLogger('seleniumbase').setLevel(logging.WARNING)
         logging.getLogger('websockets').setLevel(logging.WARNING)
         logging.getLogger('uc').setLevel(logging.WARNING)
         logging.getLogger('asyncio').setLevel(logging.WARNING)
-
+    
     @classmethod
     def from_crawler(cls, crawler):
         #Disabling urllib3 retries
         urllib3.util.retry.Retry.DEFAULT = urllib3.util.retry.Retry(total=0, connect=0, read=0, redirect=0)
         #Instantiatin seleniumbase driver in CDP mode to avoid bot detection
-        with SB(uc=True, headless=True, ad_block=True) as sb:
-            middleware = cls(sb)
+        middleware = cls()
         #Connecting close signal to the spider
         crawler.signals.connect(middleware.spider_closed, signal=signals.spider_closed)
         return middleware
@@ -141,6 +142,7 @@ class SeleniumBaseDownloadMiddleware: #Custom middleware based on scrapy-seleniu
                 self.scroll(request)
         #Returning the full response to the spider
         body = self.sb.cdp.get_page_source()
+                
         #Returning the response to the spider
         return HtmlResponse(
             request.url,
@@ -157,7 +159,7 @@ class SeleniumBaseDownloadMiddleware: #Custom middleware based on scrapy-seleniu
                 self.sb.cdp.scroll_into_view(request.meta["scrollTo"])
 
     def spider_closed(self):
-        if self.sb.driver is not None:
+        if hasattr(self.sb, "driver"):
             #Closing the selenium opened windows
             self.sb.driver.quit()
             

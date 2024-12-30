@@ -9,13 +9,16 @@ class RealestatecrawlerPipeline:
         return item
     
 class AnnouncementImagesPipeline(ImagesPipeline):
+    #Default image extension used if no extension is found in the URL
     DEFAULT_IMAGE_EXT = ".jpg"
 
+    #Overriding this method to manage wich items are requested
     def get_media_requests(self, item, info):
         if isinstance(item, ImageItem):
             image_url = item.get('image_url')
             yield scrapy.Request(image_url)
 
+    #Overriding this method to manage each image file path
     def file_path(self, request, response=None, info=None, *, item=None):
         listing_folder = item.get("ref")
         file_ext = os.path.splitext(request.url)[1]
@@ -37,43 +40,21 @@ class AnnouncementsPostgresPipeline:
         )
 
     def __init__(self, POSTGRES_HOSTNAME, POSTGRES_PORT, POSTGRES_USERNAME, POSTGRES_PASSWORD, POSTGRES_DB):
-
-        ## Create/Connect to database
-        self.connection = psycopg2.connect(host=POSTGRES_HOSTNAME, port=POSTGRES_PORT, user=POSTGRES_USERNAME, password=POSTGRES_PASSWORD, dbname=POSTGRES_DB)
-        
-        ## Create cursor, used to execute commands
+        ## Connection to the psotgres database
+        self.connection = psycopg2.connect(host=POSTGRES_HOSTNAME, port=POSTGRES_PORT, user=POSTGRES_USERNAME, password=POSTGRES_PASSWORD, database=POSTGRES_DB)
+        ## Create cursor to execute commands
         self.cur = self.connection.cursor()
         
-        ## Create announcement table if none exists
-        self.cur.execute("""
-            CREATE TABLE IF NOT EXISTS public.announcement (
-                announcementid serial PRIMARY KEY,
-                "timestamp" timestamp without time zone,
-                update_date date,
-                title text,
-                description text,
-                price integer,
-                location text,
-                rooms integer,
-                constructed_m2 integer,
-                ref text,
-                energy_calification text,
-                energy_consumption text,
-                construction_date date,
-                owner text,
-                offer_type integer,
-                image_urls text,
-                url text,
-                list_url text,
-                spider text
-            )
-        """)
-
     def process_item(self, item, spider):
 
         if not isinstance(item, AnnouncementItem):
             return item
-        
+        else:
+            self.saveAnnouncement(item)
+            self.connection.commit()
+            return item
+            
+    def saveAnnouncement(self, item):
         self.cur.execute("""
             insert into announcement (
                 timestamp,
@@ -116,9 +97,6 @@ class AnnouncementsPostgresPipeline:
                 str(item.get("spider", ""))
             )
         )
-
-        self.connection.commit()
-        return item
 
     def close_spider(self, spider):
         self.cur.close()

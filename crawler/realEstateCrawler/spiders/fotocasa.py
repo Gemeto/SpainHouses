@@ -14,9 +14,6 @@ class FotocasaSpider(scrapy.Spider):
 
     #Spider settings
     custom_settings = {
-        "DOWNLOAD_SLOTS": {
-            "www.fotocasa.es": {"delay": 2}
-        },
         "DOWNLOADER_MIDDLEWARES": {
             'realEstateCrawler.middlewares.SeleniumBaseDownloadMiddleware': 1,
         },
@@ -167,7 +164,7 @@ class FotocasaSpider(scrapy.Spider):
             announcement_data["construction_date"] = dateparser.parse("Hace " + construction_date_string).isoformat()
 
         openGalleryQuery = "&isGalleryOpen=true" if "?" in response.request.url else "?isGalleryOpen=true"
-        yield scrapy.Request(response.request.url + openGalleryQuery, callback=self.parseAnnouncementImages, cb_kwargs=dict(announcement_data=announcement_data),
+        yield scrapy.Request(response.request.url + openGalleryQuery, priority=4, callback=self.parseAnnouncementImages, cb_kwargs=dict(announcement_data=announcement_data),
             meta={
                 "selenium": True,
                 "scrollScript": "document.querySelectorAll(\"li[id*='image'] div.re-DetailMultimediaImage-container\")[document.querySelectorAll(\"li[id*='image'] div.re-DetailMultimediaImage-container\").length-1].scrollIntoView()",

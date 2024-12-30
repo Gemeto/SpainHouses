@@ -1,6 +1,12 @@
 import sys
+import os
+from pathlib import Path
 sys.path.append("../")
-from configuration import projectSettings, secrets
+from configuration import projectSettings
+from dotenv import load_dotenv
+
+#Loading the dotenv file to read the constants
+load_dotenv(dotenv_path=projectSettings.ENV_FILE_PATH)
 
 #Default crawler settings
 BOT_NAME = "realEstateCrawler"
@@ -22,7 +28,7 @@ SCHEDULER_DISK_QUEUE = "scrapy.squeues.PickleFifoDiskQueue"
 SHEDULER_MEMORY_QUEUE = "scrapy.squeues.FifoMemoryQueue"
 
 #Route to store images
-IMAGES_STORE = "../" + projectSettings.IMAGES_PATH
+IMAGES_STORE = projectSettings.IMAGES_PATH
 
 # Default pipelines
 ITEM_PIPELINES = {
@@ -31,11 +37,11 @@ ITEM_PIPELINES = {
 }
 
 #Postgres DB settings
-POSTGRES_HOSTNAME = secrets.POSTGRES_HOSTNAME
-POSTGRES_PORT = secrets.POSTGRES_PORT
-POSTGRES_USERNAME = secrets.POSTGRES_USERNAME
-POSTGRES_PASSWORD = secrets.POSTGRES_PASSWORD
-POSTGRES_DB = secrets.POSTGRES_DB
+POSTGRES_HOSTNAME = "localhost" #TODO unify hosts os.getenv('POSTGRES_HOST')
+POSTGRES_PORT = os.getenv('POSTGRES_PORT')
+POSTGRES_USERNAME = os.getenv('POSTGRES_USER')
+POSTGRES_PASSWORD = os.getenv('POSTGRES_PASSWORD')
+POSTGRES_DB = os.getenv('POSTGRES_DB')
 
 #Debug settings
 DUPEFILTER_DEBUG = True

@@ -65,13 +65,12 @@ class HabitacliaSpider(scrapy.Spider):
         zone_url = response.css("div.ver-todo-zona a::attr(href)").get()
         if zone_url is not None:
             url = self.getUrlWithFilters(zone_url + "?ordenar=mas_recientes")
-            yield scrapy.Request(response.urljoin(url), priority=2, callback=self.parseZoneList, meta={"selenium": True})
+            yield scrapy.Request(response.urljoin(url), priority=3, callback=self.parseZoneList, meta={"selenium": True})
         else:
             for zone_link in response.css("div#enlacesmapa ul.verticalul li a::attr(href)").getall():
-                yield scrapy.Request(response.urljoin(zone_link), priority=1, callback=self.parseZoneLinks, meta={"selenium": True})
-        
+                yield scrapy.Request(response.urljoin(zone_link), priority=2, callback=self.parseZoneLinks, meta={"selenium": True})
         if response.css("div#enlacesmapa ul.verticalul li a::attr(href)").getall() is None:
-            yield scrapy.Request(response.urljoin(url), priority=2, callback=self.parseZoneList, meta={"selenium": True})
+            yield scrapy.Request(response.urljoin(url), priority=3, callback=self.parseZoneList, meta={"selenium": True})
 
     def parseZoneList(self, response):
         for announcement_link in response.css("article.js-list-item::attr(data-href)").getall():
@@ -85,14 +84,14 @@ class HabitacliaSpider(scrapy.Spider):
 
         next_page = response.css("li.next a::attr(href)").get()
         if next_page is not None:
-            yield scrapy.Request(response.urljoin(next_page), priority=2, callback=self.parseZoneList, meta={"selenium": True})
+            yield scrapy.Request(response.urljoin(next_page), priority=4, callback=self.parseZoneList, meta={"selenium": True})
 
     def parseAnnouncement(self, response, listUrl):
         announcement_urls = response.css("section.typologies-all a[title='Ver anuncio']::attr(href)").getall()
         for announcement_url in announcement_urls:
             yield scrapy.Request(
                 response.urljoin(announcement_url), 
-                priority=4, 
+                priority=5, 
                 callback=self.parseAnnouncement, 
                 meta={"selenium": True}, 
                 cb_kwargs=dict(listUrl=response.request.url)

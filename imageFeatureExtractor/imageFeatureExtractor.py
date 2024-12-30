@@ -42,14 +42,16 @@ def append_to_npy(file_path, new_data):
 
     if os.path.exists(file_path):
         existing_data = np.load(file_path)
-        
         combined_data = np.concatenate((existing_data, new_data))
     else:
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        open(file_path, 'w')
         combined_data = new_data
 
     np.save(file_path, combined_data)
 
 # Setup logging
+print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
 logging.basicConfig(level=logging.INFO)
 
 # Paths and settings
@@ -58,13 +60,13 @@ output_ids_file = 'ids.npy'
 checkpoint_file = 'checkpoint.json'
 
 # Define the base path where the image feature file is stored
-base_image_features_path = "../" + projectSettings.IMAGE_FEATURES_PATH
+base_image_features_path = projectSettings.IMAGE_FEATURES_PATH
 features_path = f'{base_image_features_path}/{output_features_file}'
 feature_ids_path = f'{base_image_features_path}/{output_ids_file}'
 checkpoint_file_path = f'{base_image_features_path}/{checkpoint_file}'
 
 # Define the base path where the image folders are stored
-base_image_path = "../" + projectSettings.IMAGES_PATH
+base_image_path = projectSettings.IMAGES_PATH
 
 features_list = []
 ids_list = []
@@ -138,6 +140,8 @@ for folder_index in range(start_index, len(missing_folders)):
         # Save checkpoint and stop if the limit is reached
         if processed_images >= images_to_process:
             checkpoint = {'last_folder': folder_name, 'last_image': image_name}
+            if not os.path.exists(checkpoint_file_path):
+                os.makedirs(os.path.dirname(checkpoint_file_path), exist_ok=True)
             with open(checkpoint_file_path, 'w') as f:
                 json.dump(checkpoint, f)
             logging.info(f"Processed {processed_images} images. Checkpoint saved. Exiting.")

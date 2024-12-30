@@ -64,7 +64,7 @@ def main():
         min_size_filter = args.minSurface
         max_size_filter = args.maxSurface
     else:
-        announcement_type_filter, zone_filter, minPrice, maxPrice, minSurface, maxSurface = requestInputFilters()
+        announcement_type_filter, zone_filter, min_price_filter, max_price_filter, max_size_filter, min_size_filter = requestInputFilters()
     
     num_spiders = len(spiders)
     with multiprocessing.Pool(num_spiders) as pool:
@@ -158,7 +158,7 @@ def requestInputFilters():
     if max_size_filter < min_size_filter:
         wrongOptionSelected()
         
-    return announcement_type_filter, zone_filter, minPrice, maxPrice, minSurface, maxSurface
+    return announcement_type_filter, zone_filter, min_price_filter, max_price_filter, min_size_filter, max_size_filter
 
 def wrongOptionSelected():
     print("ERROR: Opcion no disponible")

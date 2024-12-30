@@ -6,11 +6,18 @@ services:
       dockerfile: ./web/SpainHouses/Dockerfile
     ports:
       - "8000:8000"
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      - POSTGRES_PORT=${POSTGRES_PORT}
     command: python manage.py runserver 0.0.0.0:8000
     volumes:
       - ./data:/data
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     profiles:
       - web
       
@@ -44,15 +51,18 @@ services:
     ports: 
       - "5432:5432"
     environment:
-      PGDATA: /var/lib/postgresql/data
+      - PGDATA=/var/lib/postgresql/data
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
     volumes:
       - ./configuration/dbInit:/docker-entrypoint-initdb.d/
       - ./data/postgres:/var/lib/postgresql/data
     healthcheck:
-        test: pg_isready -d ${POSTGRES_DB} -U ${POSTGRES_USER}
-        interval: 10s
-        timeout: 5s
-        retries: 5
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 10s
+      retries: 5
     profiles:
       - db
       - web

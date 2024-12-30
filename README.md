@@ -57,6 +57,14 @@
 
 This project is a base automation for common tasks of extracting, analyzing and visualizing real estate offers data.
 
+The tool is formed by three main modules:
+1. Crawler:
+   * Crawler for real estate platforms, offers filtering options to the user for efficiency reasons and it's compatible with Selenium for dynamic content load
+2. Web
+   * Real estate like web with custom metrics like prices histiorics statistics or image based suggestions among all the crawled offers
+3. Image feature extraction
+   * Image feature extraction using ResNet50 for all the images crawled
+
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 

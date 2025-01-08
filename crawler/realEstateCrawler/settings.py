@@ -1,11 +1,10 @@
 import sys
 import os
-from pathlib import Path
+from dotenv import load_dotenv
 sys.path.append("../")
 from configuration import projectSettings
-from dotenv import load_dotenv
 
-#Loading the dotenv file to read the constants
+#Load environment variables
 load_dotenv(dotenv_path=projectSettings.ENV_FILE_PATH)
 
 #Default crawler settings
@@ -33,15 +32,14 @@ IMAGES_STORE = projectSettings.IMAGES_PATH
 # Default pipelines
 ITEM_PIPELINES = {
     "realEstateCrawler.pipelines.AnnouncementImagesPipeline": 1,
-    "realEstateCrawler.pipelines.AnnouncementsPostgresPipeline": 2,
+    "realEstateCrawler.pipelines.AnnouncementsMongoDBPipeline": 2,
 }
 
 #Postgres DB settings
-POSTGRES_HOSTNAME = "localhost" #TODO unify hosts os.getenv('POSTGRES_HOST')
-POSTGRES_PORT = os.getenv('POSTGRES_PORT')
-POSTGRES_USERNAME = os.getenv('POSTGRES_USER')
-POSTGRES_PASSWORD = os.getenv('POSTGRES_PASSWORD')
-POSTGRES_DB = os.getenv('POSTGRES_DB')
+MONGO_HOST = "localhost" #os.getenv('MONGO_HOST')
+MONGO_USER = os.getenv('MONGO_USER')
+MONGO_PASS = os.getenv('MONGO_PASS')
+MONGO_DB = os.getenv('MONGO_DB')
 
 #Debug settings
 DUPEFILTER_DEBUG = True

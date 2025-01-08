@@ -17,7 +17,7 @@
   <h3 align="center">SpainHouses</h3>
 
   <p align="center">
-    Crawler and visualizer for real state offers in Spain.
+    Crawler, analyzer and visualizer for real state offers in Spain.
     <br />
     <a href="https://github.com/Gemeto/SpainHouses/issues/new?labels=bug&template=bug-report---.md">Report Bug</a>
     ·
@@ -75,14 +75,14 @@ Languages:
 * Python
 
 Frameworks:
-* Django
+* Flusk
 * Scrapy
 
 Libraries:
 * Tensorflow
 * scikit-learn
 * seleniumbase
-* psycopg2
+* pymongo
 * dateparser
 * pillow
 
@@ -101,6 +101,7 @@ To launch this tools you'll need to install:
 * Google Chrome
 * Python 3.12
 * Docker desktop
+* Cuda>=12.3
 
 ### Installation
 
@@ -111,11 +112,10 @@ To launch this tools you'll need to install:
 	```
 3. Create a file named '.env' inside the root folder and set the following required fields:
 	```sh
-	POSTGRES_DB = "db_name"
-	POSTGRES_USERNAME = "your_postgres_username"
-	POSTGRES_PASSWORD = "your_postgres_pass"
-	POSTGRES_HOSTNAME = "your_postgres_hostname"
-	POSTGRES_PORT = "your_postgres_port"
+	MONGO_DB = "your_db_name"
+	MONGO_USER = "your_username"
+	MONGO_PASS = "your_pass"
+	MONGO_HOST = "your_hostname"
 	```
 4. Create a venv inside './crawler', activate it and install requirements (Recommended)
 	```sh

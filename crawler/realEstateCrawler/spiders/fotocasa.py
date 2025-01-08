@@ -1,6 +1,7 @@
 import scrapy
 import datetime
 import dateparser
+import json
 from realEstateCrawler.items import ImageItem, AnnouncementItem
 from utils import deleteSubstrings
 import sys
@@ -14,6 +15,9 @@ class FotocasaSpider(scrapy.Spider):
 
     #Spider settings
     custom_settings = {
+        "DOWNLOAD_SLOTS": {
+            "api.geocodify.com": {"delay": 2}
+        },
         "DOWNLOADER_MIDDLEWARES": {
             'realEstateCrawler.middlewares.SeleniumBaseDownloadMiddleware': 1,
         },
@@ -22,6 +26,8 @@ class FotocasaSpider(scrapy.Spider):
 
     #Spider starting urls
     start_url = "https://www.fotocasa.es/es/comprar/viviendas/espana/todas-las-zonas/l?sortType=publicationDate"
+
+    geocodify_url = "https://api.geocodify.com/v2/parse?api_key=lCWart5tdT5gPVkKrFFdLioAo892C9WF&address=" #TODO delete my api key from the url
 
     #Zone filters
     zone_filters = {
@@ -115,6 +121,7 @@ class FotocasaSpider(scrapy.Spider):
 
     def parseAnnouncement(self, response, listUrl):
         announcement_data = {}
+        announcement_data["url"] = response.request.url
         announcement_data["listUrl"] = listUrl
         announcement_data["title"] = response.css("h1:first-of-type::text").get()
         announcement_data["description"] = response.css("p.re-DetailDescription::text").get()
@@ -133,15 +140,14 @@ class FotocasaSpider(scrapy.Spider):
         priceStr = response.css("span.re-DetailHeader-price::text").get()
         if "consultar" not in priceStr:
             announcement_data["price"] = int(deleteSubstrings(response.css("span.re-DetailHeader-price::text").get(), " .€"))
-        announcement_data["location"] = response.css("h2.re-DetailMap-address::text").get()
 
-        if announcement_data["location"] is not None:
+        announcement_data["locationStr"] = response.css("h2.re-DetailMap-address::text").get()
+        if announcement_data["locationStr"] is not None:
             if response.css("h2.re-DetailMap-address span::text").get() is not None:
-                announcement_data["location"] = announcement_data["location"] + response.css("h2.re-DetailMap-address span::text").get()
+                announcement_data["locationStr"] = announcement_data["locationStr"] + response.css("h2.re-DetailMap-address span::text").get()
         else:
-            announcement_data["location"] = response.css("h2.re-DetailMap-address span::text").get()
-
-
+            announcement_data["locationStr"] = response.css("h2.re-DetailMap-address span::text").get()
+        
         announcement_data["rooms"] = None
         rooms_distribution_index = next((i for i, x in enumerate(header_features) if "hab" in x.css("span:nth-of-type(2)::text").get()), None)
         if rooms_distribution_index is not None:
@@ -187,6 +193,26 @@ class FotocasaSpider(scrapy.Spider):
             img_number = img_number + 1
         if image_urls is not None:
             image_urls = ", ".join(image_urls)
+        announcement_data["image_urls"] = image_urls
+
+        yield scrapy.Request(self.geocodify_url + announcement_data["locationStr"],
+            dont_filter=True,
+            priority=5,
+            callback=self.parseAnnouncementLocation,
+            errback=self.errbackLocationParse,
+            cb_kwargs=dict(announcement_data=announcement_data)
+        )
+
+    def parseAnnouncementLocation(self, response, announcement_data):
+        location_data = json.loads(response.body)
+        announcement_data["location"] = {}
+        announcement_data["location"]["string"] = announcement_data["locationStr"]
+        announcement_data["location"]["country"] = self.getLocationParsedComponent(location_data, "country")
+        announcement_data["location"]["state"] = self.getLocationParsedComponent(location_data, "state")
+        announcement_data["location"]["city"] = self.getLocationParsedComponent(location_data, "city")
+        announcement_data["location"]["postcode"] = self.getLocationParsedComponent(location_data, "postcode")
+        announcement_data["location"]["street"] = self.getLocationParsedComponent(location_data, "road")
+        announcement_data["location"]["number"] = self.getLocationParsedComponent(location_data, "house_number")
 
         yield AnnouncementItem(
             timestamp = datetime.datetime.now().isoformat(),
@@ -203,8 +229,33 @@ class FotocasaSpider(scrapy.Spider):
             construction_date = announcement_data["construction_date"],
             owner = announcement_data["owner"],
             offer_type = self.announcement_type_filter if hasattr(self, "announcement_type_filter") else 1,
-            image_urls = image_urls,
-            url = response.request.url.replace("isGalleryOpen=true", ""),
+            image_urls = announcement_data["image_urls"],
+            url = announcement_data["url"],
+            list_url = announcement_data["listUrl"],
+            spider = self.name
+        )
+
+    def errbackLocationParse(self, failure, announcement_data):
+        announcement_data["location"] = {}
+        announcement_data["location"]["string"] = announcement_data["locationStr"]
+
+        yield AnnouncementItem(
+            timestamp = datetime.datetime.now().isoformat(),
+            update_date = announcement_data["update_date"],
+            title = announcement_data["title"],
+            description = announcement_data["description"],
+            price = announcement_data["price"],
+            location = announcement_data["location"],
+            rooms = announcement_data["rooms"],
+            constructed_m2 = announcement_data["constructed_m2"],
+            ref = announcement_data["ref"],
+            energy_calification = announcement_data["energyCalification"],
+            energy_consumption = announcement_data["energyConsumption"],
+            construction_date = announcement_data["construction_date"],
+            owner = announcement_data["owner"],
+            offer_type = self.announcement_type_filter if hasattr(self, "announcement_type_filter") else 1,
+            image_urls = announcement_data["image_urls"],
+            url = announcement_data["url"],
             list_url = announcement_data["listUrl"],
             spider = self.name
         )
@@ -222,3 +273,9 @@ class FotocasaSpider(scrapy.Spider):
             url = url.replace("comprar", "alquiler")
             
         return url
+
+    def getLocationParsedComponent(self, location_data, component):
+        index = next((x for i, x in enumerate(location_data["response"]) if "label" in location_data["response"][x] and component in location_data["response"][x]["label"]), None)
+        if index is not None:
+            return location_data["response"][index]["value"]
+        return None

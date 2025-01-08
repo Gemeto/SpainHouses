@@ -1,21 +1,22 @@
-{% extends 'announcement/base.html' %}
-{% load static %}
+{% extends 'templates/announcement/base.html' %}
 
 {% block css %}
-    <link rel="stylesheet" href="{% static 'css/announcements/detail.css' %}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/announcements/detail.css') }}">
 {% endblock %}
 
 {% block content %}
     <header class="property-header">
-        <h1>{{ announcement.title }}</h1>
-        <h2 class="price">{{ announcement.price }} €</h2>
+        <h1>{{ offer.title }}</h1>
+        <p class="price">{{ offer.price }} €</p>
     </header>
 
     <section class="gallery">
-        <img src="{% static '/images/' %}{{announcement.ref}}/{{announcement_images.0}}" alt="Inmueble ofertado" class="main-image" id="mainImage">
+        {% if offer.main_image %}
+            <img src="{{ url_for('offers_img_static', directory=offer.ref, filename=offer.main_image) }}" alt="Main view of the house" class="main-image" id="mainImage">
+        {% endif %}
         <div class="thumbnails">
-            {% for img in announcement_images %}
-                <img src="{% static '/images/' %}{{announcement.ref}}/{{ img }}" class="thumbnail">
+            {% for img in offer.images %}
+                <img src="{{ url_for('offers_img_static', directory=offer.ref, filename=img) }}" class="thumbnail">
             {% endfor %}
         </div>
     </section>
@@ -23,36 +24,36 @@
     <section class="property-details">
         <div class="detail">
             <span class="detail-icon">🛏️</span>
-            <span>{{ announcement.rooms }} Habitaciones</span>
+            <span>{{ offer.rooms }} Habitaciones</span>
         </div>
         <div class="detail">
             <span class="detail-icon">📏</span>
-            <span>{{ announcement.constructed_m2 }} m2</span>
+            <span>{{ offer.constructed_m2 }} m2</span>
         </div>
     </section>
 
     <section class="description">
         <h2>Descripcion</h2>
-        <p>{{ announcement.description }}</p>
+        <p>{{ offer.description }}</p>
     </section>
 
     <section class="agent-info">
         <div>
-            <h3>{{ announcement.owner }}</h3>
-            <h3>{{ announcement.location }}</h3>
+            <h3>{{ offer.owner }}</h3>
+            <h3>{{ offer.location }}</h3>
         </div>
     </section>
 
     <canvas id="myChart" width="800" height="400"></canvas>
 
-    <a href="{{ announcement.url }}" class="cta-button">Ver la oferta original</a>
+    <a href="{{ offer.url }}" class="cta-button">Ver la oferta original</a>
 
     <section class="similar-offers">
         <h2>Similar Offers</h2>
         <div class="offers-slider" id="offersSlider">
-            {% for similar in similar_offers %}
-            <div class="offer-card" onclick="location.href='{{ similar.announcementid }}'">
-                <img src="{% static '/images/' %}{{similar.ref}}/{{ similar.image_urls }}" alt="{{ similar.title }}" class="offer-image">
+            {% for similar in offer.similar_offers %}
+            <div class="offer-card" onclick="location.href='{{ similar.ref }}'">
+                <img src="{{ url_for('offers_img_static', directory=similar.ref, filename=similar.main_image) }}" alt="{{ similar.title }}" class="offer-image">
                 <div class="offer-details">
                     <h3 class="offer-title">{{ similar.title }}</h3>
                     <p class="offer-price">{{ similar.title }} €</p>
@@ -61,7 +62,7 @@
                 </div>
             </div>
             {% endfor %}
-            {% if not similar_offers %}
+            {% if not offer.similar_offers %}
                 <p>No se han encontrado ofertas similares.</p>
             {% endif %}
         </div>
@@ -76,10 +77,10 @@
         const myChart = new Chart(ctx, {
             type: 'line',
             data: {
-                labels : [{% for announcement in announcements %}"{{ announcement.timestamp }}",{% endfor %}],
+                labels : [{% for offer in offer.historic %}"{{ offer.timestamp }}",{% endfor %}],
                 datasets: [{
                     label: "Precio del anuncio",
-                    data : [{% for announcement in announcements %}{{ announcement.price }},{% endfor %}],
+                    data : [{% for offer in offer.historic %}{{ offer.price }},{% endfor %}],
                     backgroundColor: 'rgba(75, 192, 192, 0.2)',
                     borderColor: 'rgba(75, 192, 192, 1)',
                     borderWidth: 1

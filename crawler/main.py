@@ -11,9 +11,6 @@ import constants.announcementTypeFilters as tf
 
 spiders = [
     "idealista",
-    #"pisos",
-    #"properstar",
-    #"spainhouses",
     #Full dynamic content spiders
     "fotocasa",
     "habitaclia",

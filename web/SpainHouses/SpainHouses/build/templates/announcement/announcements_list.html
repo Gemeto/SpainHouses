@@ -1,0 +1,168 @@
+{% extends 'templates/announcement/base.html' %}
+
+{% block css %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/announcements/list.css') }}">
+{% endblock %}
+
+{% block content %}
+    <header>
+        <h1>Ofertas inmobiliarias en España</h1>
+        <p>Analiza inmuebles y sus ofertas en el mercado español</p>
+    </header>
+
+    <section class="filters">
+        <form id="filterForm">
+            <div class="filter-group">
+                <div class="filter-item">
+                    <label for="minPrice">Precio min.</label>
+                    <input type="number" id="minPrice" name="minPrice" placeholder="Min Price" value="{{ get.minPrice }}">
+                </div>
+                <div class="filter-item">
+                    <label for="maxPrice">Precio max.</label>
+                    <input type="number" id="maxPrice" name="maxPrice" placeholder="Max Price" value="{{ get.maxPrice }}">
+                </div>
+                <div class="filter-item">
+                    <label for="minArea">Area min. (m²)</label>
+                    <input type="number" id="minArea" name="minArea" placeholder="Min Area" value="{{ get.minArea }}">
+                </div>
+                <div class="filter-item">
+                    <label for="maxArea">Area max. (m²)</label>
+                    <input type="number" id="maxArea" name="maxArea" placeholder="Max Area" value="{{ get.maxArea }}">
+                </div>
+            </div>
+            <div class="filter-group">
+                <div class="filter-item">
+                    <label for="publishDate">Publicado después de</label>
+                    <input type="date" id="publishDate" name="publishDate">
+                </div>
+                <div class="filter-item">
+                    <label for="minRooms">Habitaciones min.</label>
+                    <input type="number" id="minRooms" name="minRooms" min="1" placeholder="Min Rooms" value="{{ get.minRooms }}">
+                </div>
+                <div class="filter-item">
+                    <label for="minBathrooms">Baños min.</label>
+                    <input type="number" id="minBathrooms" name="minBathrooms" min="1" placeholder="Min Bathrooms" value="{{ get.minBathrooms }}">
+                </div>
+                <div class="filter-item">
+                    <label for="area">Provincia</label>
+                    <select id="area" name="area">
+                        <option value="">Todas</option>
+                        <option value="downtown">Downtown</option>
+                        <option value="suburb">Suburb</option>
+                    </select>
+                </div>
+            </div>
+            <div class="filter-group">
+                <div class="filter-item">
+                    <label for="constructionDate">Construido despues de</label>
+                    <input type="date" id="constructionDate" name="constructionDate" value="{{ get.constructionDate }}">
+                </div>
+                <div class="filter-item">
+                    <label for="fullTextSearch">Contiene el texto</label>
+                    <input type="text" id="fullTextSearch" name="fullTextSearch" value="{{ get.fullTextSearch }}">
+                </div>
+            </div>
+            <div class="filter-group">
+                <div class="filter-item">
+                    <label for="city">Ciudad</label>
+                    <input id="city" name="city" placeholder="Palma" value="{{ get.city }}">
+                </div>
+                <div class="filter-item">
+                    <label for="state">Provincia</label>
+                    <input id="state" name="state" placeholder="Islas baleares" value="{{ get.state }}">
+                </div>
+                <div class="filter-item">
+                    <label for="postcode">Código postal</label>
+                    <input id="postcode" name="postcode" placeholder="08944" value="{{ get.postcode }}">
+                </div>
+                <div class="filter-item">
+                    <label for="number">Número</label>
+                    <input id="number" name="number" placeholder="6" value="{{ get.number }}">
+                </div>
+            </div>
+            <div class="filter-group">
+                <div class="filter-item">
+                    <label for="offerType">Tipo de oferta</label>
+                    <select id="offerType" name="offerType" value="{{ get.offerType }}">
+                        <option value="">Todos los tipos</option>
+                        <option value=1>En venta</option>
+                        <option value=2>En alquiler</option>
+                    </select>
+                </div>
+            </div>
+            <button type="submit" class="search-button">Buscar</button>
+        </form>
+    </section>
+
+    <main class="property-list" id="propertyList">
+        {% for offer in paginated_offers.docs %}
+            <div class="property-card">
+                {% if offer.main_image %}
+                    <img src="{{ url_for('offers_img_static', directory=offer.ref, filename=offer.main_image) }}" alt="{{ offer.title }}" class="property-image">
+                {% endif %}
+                <div class="property-details">
+                    <h2 class="property-title">{{ offer.title }}</h2>
+                    <p class="property-price">{{ offer.price }}</p>
+                    <div class="property-features">
+                        <span class="feature"><span class="feature-icon">🚿</span> {{ offer.rooms }} baths</span>
+                        <span class="feature"><span class="feature-icon">📏</span> {{ offer.constructed_m2 }} m2</span>
+                    </div>
+                    <a href="/announcement/{{ offer.ref }}" class="cta-button">View Details</a>
+                </div>
+            </div>
+        {%endfor%}
+    </main>
+
+    <div class="pagination">
+        {% if paginated_offers.has_prev %}
+            <button onclick="changePage('previous')">Anterior</button>
+        {% endif %}
+        
+        <span class="current">Página {{ paginated_offers.current_page }} de {{ paginated_offers.total_pages }}</span>
+        
+        {% if paginated_offers.has_next %}
+            <button onclick="changePage('next')">Siguiente</button>
+        {% endif %}
+    </div>
+
+{% endblock %}
+
+{% block scripts %}
+    <script>
+        document.getElementById('filterForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const inputs = this.querySelectorAll('input, select');
+            const url = new URL(location.origin + location.pathname);
+
+            inputs.forEach(input => {
+                if (input.value.trim() !== '') {
+                    url.searchParams.append(input.name, input.value);
+                }
+            });
+
+            window.location.href = url.toString();
+        });
+
+        function changePage(action) {
+            switch(action) {
+                case 'previous':
+                    {% if paginated_offers.has_prev %}
+                        url = '?page={{ current_page-1 }}';
+                    {% endif %}
+                    break;
+                case 'next':
+                    {% if paginated_offers.has_next %}
+                        url = '?page={{ current_page+1 }}';
+                    {% endif %}
+                    break;
+            }
+
+            const queryParams = new URLSearchParams(window.location.search);
+            queryParams.delete('page');
+            const urlWithOldQueries = url + '&' + queryParams.toString();
+            location.href = urlWithOldQueries;
+        }
+        
+    </script>
+{% endblock %}

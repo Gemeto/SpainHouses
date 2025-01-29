@@ -12,10 +12,9 @@ def get_db():
 
 db = LocalProxy(get_db)
 
-def build_offer_query_sort(filters):
+def build_paginated_offers_query(filters):
     query = {}
-    sort = [("update_date", -1)]
-    query = {}
+
     if filters:
         price_query = {}
         area_query = {}
@@ -53,17 +52,32 @@ def build_offer_query_sort(filters):
         if "fullTextSearch" in filters:
             query["$text"] = {"$search": filters["fullTextSearch"]}
 
-    return query, sort
+    return query
 
 def get_paginated_offers(filters, page, offers_per_page):
-    query, sort = build_offer_query_sort(filters)
-    print(query)
     page = max(1, page)
-    skip = (page - 1) * offers_per_page
-    total_docs = db.announcements.count_documents(query)
+    query = build_paginated_offers_query(filters)
+
+    pipeline = [
+        {"$match": query},
+        {"$sort": {"update_date": -1}},
+        {"$group": {
+                "_id": "$ref",
+                "doc": {"$first": "$$ROOT"}
+            }
+        },
+        {"$replaceRoot": {"newRoot": "$doc"}},
+        {"$skip": (page - 1) * offers_per_page},
+        {"$limit": offers_per_page}
+    ]
+
+    total_docs = len(list(db.announcements.aggregate([
+        {"$match": query},
+        {"$group": {"_id": "$ref"}}
+    ])))
+    
     total_pages = ceil(total_docs / offers_per_page)
-    offers = db.announcements.find(query).skip(skip).sort(sort)
-    offers = offers.limit(offers_per_page)
+    offers = db.announcements.aggregate(pipeline)
     
     return {
         'total_docs': total_docs,
@@ -91,7 +105,9 @@ def get_offer(ref):
             "$limit": 1
         }
     ]
+
     offer = db.announcements.aggregate(pipeline).next()
+
     return offer
     
 def get_offers_by_ref(refs):

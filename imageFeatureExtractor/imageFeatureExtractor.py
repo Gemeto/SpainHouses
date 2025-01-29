@@ -9,7 +9,7 @@ import time
 import os
 import sys
 sys.path.append("../")
-from configuration import projectSettings
+from configuration import projectPaths
 
 def extract_features(image_path, model):
     try:
@@ -59,13 +59,13 @@ output_ids_file = 'ids.npy'
 checkpoint_file = 'checkpoint.json'
 
 # Define the base path where the image feature file is stored
-base_image_features_path = projectSettings.IMAGE_FEATURES_PATH
+base_image_features_path = projectPaths.IMAGE_FEATURES_PATH
 features_path = f'{base_image_features_path}/{output_features_file}'
 feature_ids_path = f'{base_image_features_path}/{output_ids_file}'
 checkpoint_file_path = f'{base_image_features_path}/{checkpoint_file}'
 
 # Define the base path where the image folders are stored
-base_image_path = projectSettings.IMAGES_PATH
+base_image_path = projectPaths.IMAGES_PATH
 
 features_list = []
 ids_list = []

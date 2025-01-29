@@ -5,6 +5,8 @@ import argparse
 import importlib
 import multiprocessing
 import sys
+import os
+import shutil
 sys.path.append("../")
 import constants.zoneFilters as zf
 import constants.announcementTypeFilters as tf
@@ -44,6 +46,22 @@ announcement_type_filter_names = {
 }
 
 def main():
+    num_spiders = len(spiders)
+
+    if os.path.exists("./jobs"):
+        continue_process = input("Quiere continuar con el proceso anterior? (s/n): ")
+        if continue_process.lower() == "s":
+            with multiprocessing.Pool(num_spiders) as pool:
+                try:
+                    pool.starmap(rerunSpiderThread,
+                        zip(spiders)
+                    )
+                except KeyboardInterrupt:
+                    print("Proceso interrumpido por el usuario")
+            return
+        else:
+            shutil.rmtree("./jobs")
+
     parser = argparse.ArgumentParser()
     parser.add_argument("-t", "--type", help = "Tipo de ofertas")
     parser.add_argument("-z", "--zone", help = "Filtro de zona")
@@ -62,8 +80,7 @@ def main():
         max_size_filter = args.maxSurface
     else:
         announcement_type_filter, zone_filter, min_price_filter, max_price_filter, min_size_filter, max_size_filter = requestInputFilters()
-    
-    num_spiders = len(spiders)
+
     with multiprocessing.Pool(num_spiders) as pool:
         try:
             pool.starmap(runSpiderThread,
@@ -95,6 +112,20 @@ def runSpiderThread(spider, zone_filter, announcement_type_filter, min_price_fil
                       max_price_filter=max_price_filter,
                       min_size_filter=min_size_filter,
                       max_size_filter=max_size_filter)
+    except Exception as e:
+        print(f"No se ha podido cargar el spider {spider} debido a un error: {e}")
+
+    process.start()
+
+def rerunSpiderThread(spider):
+    settings = get_project_settings()
+    configure_logging(settings)
+    process = CrawlerProcess(settings)
+
+    try:
+        module = importlib.import_module(f"realEstateCrawler.spiders.{spider}")
+        class_name = getattr(module, spider.capitalize() + "Spider")
+        process.crawl(class_name)
     except Exception as e:
         print(f"No se ha podido cargar el spider {spider} debido a un error: {e}")
 

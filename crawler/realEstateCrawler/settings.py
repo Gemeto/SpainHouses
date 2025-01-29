@@ -2,16 +2,16 @@ import sys
 import os
 from dotenv import load_dotenv
 sys.path.append("../")
-from configuration import projectSettings
+from configuration import projectPaths
 
 #Load environment variables
-load_dotenv(dotenv_path=projectSettings.ENV_FILE_PATH)
+load_dotenv(dotenv_path=projectPaths.ENV_FILE_PATH)
 
 #Default crawler settings
 BOT_NAME = "realEstateCrawler"
 SPIDER_MODULES = ["realEstateCrawler.spiders"]
 NEWSPIDER_MODULE = "realEstateCrawler.spiders"
-USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36"
+USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36"
 DOWNLOADER_CLIENT_TLS_METHOD = "TLSv1.2"
 REQUEST_FINGERPRINTER_IMPLEMENTATION = "2.7"
 FEED_EXPORT_ENCODING = "utf-8"
@@ -27,7 +27,7 @@ SCHEDULER_DISK_QUEUE = "scrapy.squeues.PickleFifoDiskQueue"
 SHEDULER_MEMORY_QUEUE = "scrapy.squeues.FifoMemoryQueue"
 
 #Route to store images
-IMAGES_STORE = projectSettings.IMAGES_PATH
+IMAGES_STORE = projectPaths.IMAGES_PATH
 
 # Default pipelines
 ITEM_PIPELINES = {
@@ -36,7 +36,7 @@ ITEM_PIPELINES = {
 }
 
 #Postgres DB settings
-MONGO_HOST = "localhost" #os.getenv('MONGO_HOST')
+MONGO_HOST = "localhost"
 MONGO_USER = os.getenv('MONGO_USER')
 MONGO_PASS = os.getenv('MONGO_PASS')
 MONGO_DB = os.getenv('MONGO_DB')

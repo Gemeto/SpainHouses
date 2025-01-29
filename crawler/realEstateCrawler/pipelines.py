@@ -1,6 +1,7 @@
 import os
 import scrapy
 import pymongo
+import logging
 from itemadapter import ItemAdapter
 from scrapy.pipelines.images import ImagesPipeline
 from realEstateCrawler.items import ImageItem, AnnouncementItem
@@ -34,6 +35,7 @@ class AnnouncementsMongoDBPipeline:
     def __init__(self, mongo_uri, mongo_db):
         self.mongo_uri = mongo_uri
         self.mongo_db = mongo_db
+        logging.getLogger('pymongo').setLevel(logging.WARNING)
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -41,8 +43,7 @@ class AnnouncementsMongoDBPipeline:
         password = crawler.settings.get("MONGO_PASS")
         db = crawler.settings.get("MONGO_DB")
         host = crawler.settings.get("MONGO_HOST")
-        print(crawler.settings.get("MONGO_DB"))
-        print(db)
+        
         return cls(
             mongo_uri=f"mongodb://{user}:{password}@{host}?authSource=admin",
             mongo_db=db,

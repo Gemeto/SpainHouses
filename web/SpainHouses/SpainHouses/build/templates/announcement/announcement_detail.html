@@ -12,11 +12,11 @@
 
     <section class="gallery">
         {% if offer.main_image %}
-            <img src="{{ url_for('offers_img_static', directory=offer.ref, filename=offer.main_image) }}" alt="Main view of the house" class="main-image" id="mainImage">
+            <img src="{{ url_for('offer_img_static', directory=offer.ref, filename=offer.main_image) }}" alt="Main view of the house" class="main-image" id="mainImage">
         {% endif %}
         <div class="thumbnails">
             {% for img in offer.images %}
-                <img src="{{ url_for('offers_img_static', directory=offer.ref, filename=img) }}" class="thumbnail">
+                <img src="{{ url_for('offer_img_static', directory=offer.ref, filename=img) }}" class="thumbnail">
             {% endfor %}
         </div>
     </section>
@@ -40,7 +40,9 @@
     <section class="agent-info">
         <div>
             <h3>{{ offer.owner }}</h3>
-            <h3>{{ offer.location }}</h3>
+            <h3>{{ offer.construction_date }}</h3>
+            <h3>{{ offer.energy_calification }}</h3>
+            <h3>{{ offer.location.text }}</h3>
         </div>
     </section>
 
@@ -53,7 +55,7 @@
         <div class="offers-slider" id="offersSlider">
             {% for similar in offer.similar_offers %}
             <div class="offer-card" onclick="location.href='{{ similar.ref }}'">
-                <img src="{{ url_for('offers_img_static', directory=similar.ref, filename=similar.main_image) }}" alt="{{ similar.title }}" class="offer-image">
+                <img src="{{ url_for('offer_img_static', directory=similar.ref, filename=similar.main_image) }}" alt="{{ similar.title }}" class="offer-image">
                 <div class="offer-details">
                     <h3 class="offer-title">{{ similar.title }}</h3>
                     <p class="offer-price">{{ similar.title }} €</p>

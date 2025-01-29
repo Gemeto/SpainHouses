@@ -1,8 +1,9 @@
 import scrapy
 import datetime
 import dateparser
+import json
 from realEstateCrawler.items import ImageItem, AnnouncementItem
-from utils import deleteSubstrings
+from offerParser import deleteSubstrings, getLocationParsedComponent
 import sys
 sys.path.append("../")
 import constants.zoneFilters as zf
@@ -14,6 +15,10 @@ class HabitacliaSpider(scrapy.Spider):
     
     #Spider settings
     custom_settings = {
+        "DOWNLOAD_SLOTS": {
+            "www.habitaclia.com": {"delay": 2},
+            "api.geocodify.com": {"delay": 2}
+        },
         "DOWNLOADER_MIDDLEWARES": {
             "realEstateCrawler.middlewares.SeleniumBaseDownloadMiddleware": 1,
         },
@@ -22,6 +27,8 @@ class HabitacliaSpider(scrapy.Spider):
 
     #Spider starting urls
     start_url = "https://www.habitaclia.com/"
+
+    geocodify_url = "https://api.geocodify.com/v2/parse?api_key=lCWart5tdT5gPVkKrFFdLioAo892C9WF&address=" #TODO delete my api key from the url
 
     #Zone filters
     zone_filters = {
@@ -98,86 +105,135 @@ class HabitacliaSpider(scrapy.Spider):
             )
         
         if len(announcement_urls) == 0:
-            title = response.css("h1:first-of-type::text").get()
-            description = response.css("p.detail-description::text").get()
-            update_date = dateparser.parse(response.css("time::text").get()).isoformat()
+            announcement_data = {}
+            announcement_data["url"] = response.request.url
+            announcement_data["listUrl"] = listUrl
+            announcement_data["title"] = response.css("h1:first-of-type::text").get()
+            announcement_data["description"] = response.css("p.detail-description::text").get()
+            announcement_data["update_date"] = dateparser.parse(response.css("time::text").get()).isoformat()
             distribution = response.css("article.has-aside:nth-of-type(2) ul li::text").getall()
-            features = response.css("article.has-aside:nth-of-type(3) ul li").getall()
+            features = response.css("article.has-aside:nth-of-type(3) ul li::text").getall()
 
-            price = None
+            announcement_data["price"] = None
             priceStr = response.css("div.price span[itemprop=price]::text").get()
             if priceStr is not None:
-                price = int(deleteSubstrings(priceStr, " .€"))
+                announcement_data["price"] = int(deleteSubstrings(priceStr, " .€"))
 
-            location = ""
+            announcement_data["locationStr"] = ""
             location_items = response.css("h4.address::text").getall()
             for item in location_items:
-                location =f"{location} {item.strip()}"
+                announcement_data["locationStr"] = f"{announcement_data['locationStr']} {item.strip()}"
 
-            rooms = None
-            rooms_distribution_index = next((i for i, x in enumerate(distribution) if "habitaciones" in x), None)
-            if rooms_distribution_index is not None:
-                rooms = int(distribution[rooms_distribution_index].replace(" habitaciones", ""))
+            announcement_data["rooms"] = self.parseFeature(distribution, "habitaciones")
+            if announcement_data["rooms"] is not None:
+                announcement_data["rooms"] = int(announcement_data["rooms"].replace(" habitaciones", ""))
 
-            constructed_m2 = None
-            constructed_m2_distribution_index = next((i for i, x in enumerate(distribution) if x.startswith("Superficie")), None)
-            if constructed_m2_distribution_index is not None:
-                constructed_m2 = int(deleteSubstrings(distribution[constructed_m2_distribution_index], ["Superficie ", "m"]))
+            announcement_data["constructed_m2"] = self.parseFeature(distribution, "Superficie")
+            if announcement_data["constructed_m2"] is not None:
+                announcement_data["constructed_m2"] = int(deleteSubstrings(announcement_data["constructed_m2"], ["Superficie ", "m"]))
 
-            ref = response.css("h4.subtitle::text").get()
-            if ref is not None:
-                ref = deleteSubstrings(ref, ["Referencia del anuncio habitaclia/", ":", " "])
+            announcement_data["ref"] = response.css("h4.subtitle::text").get()
+            if announcement_data["ref"] is not None:
+                announcement_data["ref"] = deleteSubstrings(announcement_data["ref"], ["Referencia del anuncio habitaclia/", ":", " "])
 
-            energyCalification = response.css("div.rating::attr(class)").get()
-            energyConsumption = response.css("div.rating-box:first-of-type::text").get()
-            if energyConsumption is not None:
-                energyConsumption = energyConsumption.strip().replace("Consumo:", "")
-            if(energyCalification is not None):
-                energyCalification = energyCalification.replace("rating c-", "")
+            announcement_data["energyCalification"] = response.css("div.rating::attr(class)").get()
+            announcement_data["energyConsumption"] = response.css("div.rating-box:first-of-type::text").get()
+            if announcement_data["energyConsumption"] is not None:
+                announcement_data["energyConsumption"] = announcement_data["energyConsumption"].strip().replace("Consumo:", "")
+            if announcement_data["energyCalification"] is not None:
+                announcement_data["energyCalification"] = announcement_data["energyCalification"].replace("rating c-", "")
 
-            owner = response.css("h2#titulo-formDades::text").get()
-            if owner is not None:
-                owner = owner.replace("Contactar ", "")
+            announcement_data["owner"] = response.css("h2#titulo-formDades::text").get()
+            if announcement_data["owner"] is not None:
+                announcement_data["owner"] = announcement_data["owner"].replace("Contactar ", "")
 
-            cosntruction_date = None
-            construction_date_index = next((i for i, x in enumerate(features) if x.startswith("Año construcción")), None)
-            if construction_date_index is not None:
-                cosntruction_date = datetime.parse(int(features[construction_date_index].replace("Año construcción ", "")), 1, 1).isoformat()
-            image_urls = response.css("div.ficha_foto img::attr(src)").getall()
+            announcement_data["construction_date"] = self.parseFeature(features, "Año construcción")
+            if announcement_data["construction_date"] is not None:
+                announcement_data["construction_date"] = datetime.date(int(announcement_data["construction_date"].replace("Año construcción ", "")), 1, 1).isoformat()
+
+            announcement_data["image_urls"] = response.css("div.ficha_foto img::attr(src)").getall()
             img_number = 1
-            for image_url in image_urls:
+            for image_url in announcement_data["image_urls"]:
                 if image_url.startswith("//"):
                     image_url = "https:" + image_url
                 yield ImageItem(
                     image_url=image_url,
-                    image_name=f'{ref}_{img_number}',
-                    ref=ref,
+                    image_name=f'{announcement_data["ref"]}_{img_number}',
+                    ref=announcement_data["ref"],
                     spiderName=self.name,
                 )
                 img_number = img_number + 1
-            if image_urls is not None:
-                image_urls = ", ".join(image_urls)
+            if announcement_data["image_urls"] is not None:
+                announcement_data["image_urls"] = ", ".join(announcement_data["image_urls"])
+            
+            announcement_data["url"] = response.request.url
+            announcement_data["listUrl"] = listUrl
 
-            yield AnnouncementItem(
-                timestamp = datetime.datetime.now().isoformat(),
-                update_date = update_date,
-                title = title,
-                description = description,
-                price = price,
-                location = location,
-                rooms = rooms,
-                constructed_m2 = constructed_m2,
-                ref = ref,
-                energy_calification = energyCalification,
-                energy_consumption = energyConsumption if energyConsumption is not None else "",
-                construction_date = cosntruction_date,
-                owner = owner,
-                offer_type = self.announcement_type_filter if hasattr(self, "announcement_type_filter") else 1,
-                image_urls = image_urls,
-                url = response.request.url,
-                list_url = listUrl,
-                spider = self.name
+            yield scrapy.Request(self.geocodify_url + announcement_data["locationStr"],
+                dont_filter=True,
+                priority=5,
+                callback=self.parseAnnouncementLocation,
+                errback=self.errbackLocationParse,
+                cb_kwargs=dict(announcement_data=announcement_data)
             )
+
+    def parseAnnouncementLocation(self, response, announcement_data):
+        location_data = json.loads(response.body)
+        announcement_data["location"] = {}
+        announcement_data["location"]["text"] = announcement_data["locationStr"]
+        announcement_data["location"]["country"] = getLocationParsedComponent(location_data, "country")
+        announcement_data["location"]["state"] = getLocationParsedComponent(location_data, "state")
+        announcement_data["location"]["city"] = getLocationParsedComponent(location_data, "city")
+        announcement_data["location"]["postcode"] = getLocationParsedComponent(location_data, "postcode")
+        announcement_data["location"]["street"] = getLocationParsedComponent(location_data, "road")
+        announcement_data["location"]["number"] = getLocationParsedComponent(location_data, "house_number")
+
+        yield AnnouncementItem(
+            timestamp = datetime.datetime.now().isoformat(),
+            update_date = announcement_data["update_date"],
+            title = announcement_data["title"],
+            description = announcement_data["description"],
+            price = announcement_data["price"],
+            location = announcement_data["location"],
+            rooms = announcement_data["rooms"],
+            constructed_m2 = announcement_data["constructed_m2"],
+            ref = announcement_data["ref"],
+            energy_calification = announcement_data["energyCalification"],
+            energy_consumption = announcement_data["energyConsumption"] if announcement_data["energyConsumption"] is not None else "",
+            construction_date = announcement_data["construction_date"],
+            owner = announcement_data["owner"],
+            offer_type = self.announcement_type_filter if hasattr(self, "announcement_type_filter") else 1,
+            image_urls = announcement_data["image_urls"],
+            url = announcement_data["url"],
+            list_url = announcement_data["listUrl"],
+            spider = self.name
+        )
+
+    def errbackLocationParse(self, failure):
+        announcement_data = failure.request.cb_kwargs["announcement_data"]
+        announcement_data["location"] = {}
+        announcement_data["location"]["text"] = announcement_data["locationStr"]
+
+        yield AnnouncementItem(
+            timestamp = datetime.datetime.now().isoformat(),
+            update_date = announcement_data["update_date"],
+            title = announcement_data["title"],
+            description = announcement_data["description"],
+            price = announcement_data["price"],
+            location = announcement_data["location"],
+            rooms = announcement_data["rooms"],
+            constructed_m2 = announcement_data["constructed_m2"],
+            ref = announcement_data["ref"],
+            energy_calification = announcement_data["energyCalification"],
+            energy_consumption = announcement_data["energyConsumption"],
+            construction_date = announcement_data["construction_date"],
+            owner = announcement_data["owner"],
+            offer_type = self.announcement_type_filter if hasattr(self, "announcement_type_filter") else 1,
+            image_urls = announcement_data["image_urls"],
+            url = announcement_data["url"],
+            list_url = announcement_data["listUrl"],
+            spider = self.name
+        )
 
     def getUrlWithFilters(self, url):
             if hasattr(self, "min_price_filter") and self.min_price_filter > 0:
@@ -188,4 +244,9 @@ class HabitacliaSpider(scrapy.Spider):
                 url = f"{url}&m2={self.min_size_filter}"
 
             return url
-
+    
+    def parseFeature(self, features, feature_name):
+        index = next((i for i, x in enumerate(features) if feature_name in x), None)
+        if index is not None:
+            return features[index]
+        return None

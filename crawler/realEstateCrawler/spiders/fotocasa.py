@@ -1,9 +1,9 @@
+from realEstateCrawler.items import ImageItem, AnnouncementItem
+from offerParser import deleteSubstrings, getLocationParsedComponent
 import scrapy
 import datetime
 import dateparser
 import json
-from realEstateCrawler.items import ImageItem, AnnouncementItem
-from utils import deleteSubstrings
 import sys
 sys.path.append("../")
 import constants.zoneFilters as zf
@@ -16,6 +16,7 @@ class FotocasaSpider(scrapy.Spider):
     #Spider settings
     custom_settings = {
         "DOWNLOAD_SLOTS": {
+            "www.fotocasa.es": {"delay": 5},
             "api.geocodify.com": {"delay": 2}
         },
         "DOWNLOADER_MIDDLEWARES": {
@@ -79,7 +80,7 @@ class FotocasaSpider(scrapy.Spider):
                     )
             else:
                 url = self.getUrlWithFilters(self.start_url)
-                yield scrapy.Request(url, callback=self.parse,
+                yield scrapy.Request(url, callback=self.parse, priority=1,
                     meta={
                         "selenium": True,
                         "scrollTo": self.list_scroll_selector,
@@ -129,8 +130,27 @@ class FotocasaSpider(scrapy.Spider):
         announcement_data["energyCalification"] = response.css("div.re-DetailEnergyCertificate-item:nth-of-type(1)::text").get()
         announcement_data["energyConsumption"] = response.css("div.re-DetailEnergyCertificate-itemUnits::text").get()
         announcement_data["update_date"] = None
+
         features = response.css("div.re-DetailFeaturesList-featureContent")
         header_features = response.css("ul.re-DetailHeader-features li")
+
+        announcement_data["rooms"] = self.parseFeature(header_features, "hab", "span:nth-of-type(2)::text", "span:nth-of-type(2) span::text")
+        if announcement_data["rooms"] is not None:
+            announcement_data["rooms"] = int(announcement_data["rooms"])
+
+        announcement_data["constructed_m2"] = self.parseFeature(header_features, "m²", "span:nth-of-type(2)::text", "span:nth-of-type(2) span::text")
+        if announcement_data["constructed_m2"] is not None:
+            announcement_data["constructed_m2"] = int(announcement_data["constructed_m2"])
+
+        announcement_data["construction_date"] = None    
+        construction_date_string = self.parseFeature(features, "Antigüedad", "p.re-DetailFeaturesList-featureLabel", "div.re-DetailFeaturesList-featureValue::text")
+        if construction_date_string is not None:
+            if "+" in construction_date_string:
+                construction_date_string = construction_date_string.replace("+", "")
+            else:
+                construction_date_string_splitted = construction_date_string.split()
+                construction_date_string = " ".join([construction_date_string_splitted[-2], construction_date_string_splitted[-1]])
+            announcement_data["construction_date"] = dateparser.parse("Hace " + construction_date_string).isoformat()
 
         announcement_data["owner"] = response.css("a.re-FormContactDetail-logo::attr(title)").get()
         if announcement_data["owner"] is None:
@@ -147,36 +167,26 @@ class FotocasaSpider(scrapy.Spider):
                 announcement_data["locationStr"] = announcement_data["locationStr"] + response.css("h2.re-DetailMap-address span::text").get()
         else:
             announcement_data["locationStr"] = response.css("h2.re-DetailMap-address span::text").get()
-        
-        announcement_data["rooms"] = None
-        rooms_distribution_index = next((i for i, x in enumerate(header_features) if "hab" in x.css("span:nth-of-type(2)::text").get()), None)
-        if rooms_distribution_index is not None:
-            announcement_data["rooms"] = int(header_features[rooms_distribution_index].css("span:nth-of-type(2) span::text").get())
 
-        announcement_data["constructed_m2"] = None
-        constructed_m2_distribution_index = next((i for i, x in enumerate(header_features) if "m²" in x.css("span:nth-of-type(2)::text").get()), None)
-        if constructed_m2_distribution_index is not None:
-            announcement_data["constructed_m2"] = int(header_features[constructed_m2_distribution_index].css("span:nth-of-type(2) span::text").get())
-
-        announcement_data["construction_date"] = None
-        construction_date_index = next((i for i, x in enumerate(features) if "Antigüedad" in x.css("p.re-DetailFeaturesList-featureLabel").get()), None)
-        if construction_date_index is not None:
-            construction_date_string = features[construction_date_index].css("div.re-DetailFeaturesList-featureValue::text").get()
-            if "+" in construction_date_string:
-                construction_date_string = construction_date_string.replace("+", "")
-            else:
-                construction_date_string_splitted = construction_date_string.split()
-                construction_date_string = " ".join([construction_date_string_splitted[-2], construction_date_string_splitted[-1]])
-            announcement_data["construction_date"] = dateparser.parse("Hace " + construction_date_string).isoformat()
-
-        openGalleryQuery = "&isGalleryOpen=true" if "?" in response.request.url else "?isGalleryOpen=true"
-        yield scrapy.Request(response.request.url + openGalleryQuery, priority=4, callback=self.parseAnnouncementImages, cb_kwargs=dict(announcement_data=announcement_data),
-            meta={
-                "selenium": True,
-                "scrollScript": "document.querySelectorAll(\"li[id*='image'] div.re-DetailMultimediaImage-container\")[document.querySelectorAll(\"li[id*='image'] div.re-DetailMultimediaImage-container\").length-1].scrollIntoView()",
-                "scrollUntil": "document.querySelectorAll(\"li[id*='image'] div:not(.re-DetailMultimediaImage-container):first-of-type\").length == 0",
-            }
-        )
+        askForImages = response.css("div.re-DetailMosaic-ask")
+        if askForImages is not None:
+            announcement_data["image_urls"] = None
+            yield scrapy.Request(self.geocodify_url + announcement_data["locationStr"],
+                dont_filter=True,
+                priority=5,
+                callback=self.parseAnnouncementLocation,
+                errback=self.errbackLocationParse,
+                cb_kwargs=dict(announcement_data=announcement_data)
+            )
+        else:
+            openGalleryQuery = "&isGalleryOpen=true" if "?" in response.request.url else "?isGalleryOpen=true"
+            yield scrapy.Request(response.request.url + openGalleryQuery, priority=4, callback=self.parseAnnouncementImages, cb_kwargs=dict(announcement_data=announcement_data),
+                meta={
+                    "selenium": True,
+                    "scrollScript": "document.querySelectorAll(\"li[id*='image'] div.re-DetailMultimediaImage-container\")[document.querySelectorAll(\"li[id*='image'] div.re-DetailMultimediaImage-container\").length-1].scrollIntoView()",
+                    "scrollUntil": "document.querySelectorAll(\"li[id*='image'] div:not(.re-DetailMultimediaImage-container):first-of-type\").length == 0",
+                }
+            )
 
     def parseAnnouncementImages(self, response, announcement_data):
         image_urls = response.css("img.re-DetailMultimediaImage-image::attr(src)").getall()
@@ -206,13 +216,13 @@ class FotocasaSpider(scrapy.Spider):
     def parseAnnouncementLocation(self, response, announcement_data):
         location_data = json.loads(response.body)
         announcement_data["location"] = {}
-        announcement_data["location"]["string"] = announcement_data["locationStr"]
-        announcement_data["location"]["country"] = self.getLocationParsedComponent(location_data, "country")
-        announcement_data["location"]["state"] = self.getLocationParsedComponent(location_data, "state")
-        announcement_data["location"]["city"] = self.getLocationParsedComponent(location_data, "city")
-        announcement_data["location"]["postcode"] = self.getLocationParsedComponent(location_data, "postcode")
-        announcement_data["location"]["street"] = self.getLocationParsedComponent(location_data, "road")
-        announcement_data["location"]["number"] = self.getLocationParsedComponent(location_data, "house_number")
+        announcement_data["location"]["text"] = announcement_data["locationStr"]
+        announcement_data["location"]["country"] = getLocationParsedComponent(location_data, "country")
+        announcement_data["location"]["state"] = getLocationParsedComponent(location_data, "state")
+        announcement_data["location"]["city"] = getLocationParsedComponent(location_data, "city")
+        announcement_data["location"]["postcode"] = getLocationParsedComponent(location_data, "postcode")
+        announcement_data["location"]["street"] = getLocationParsedComponent(location_data, "road")
+        announcement_data["location"]["number"] = getLocationParsedComponent(location_data, "house_number")
 
         yield AnnouncementItem(
             timestamp = datetime.datetime.now().isoformat(),
@@ -235,9 +245,10 @@ class FotocasaSpider(scrapy.Spider):
             spider = self.name
         )
 
-    def errbackLocationParse(self, failure, announcement_data):
+    def errbackLocationParse(self, failure):
+        announcement_data = failure.request.cb_kwargs["announcement_data"]
         announcement_data["location"] = {}
-        announcement_data["location"]["string"] = announcement_data["locationStr"]
+        announcement_data["location"]["text"] = announcement_data["locationStr"]
 
         yield AnnouncementItem(
             timestamp = datetime.datetime.now().isoformat(),
@@ -273,6 +284,12 @@ class FotocasaSpider(scrapy.Spider):
             url = url.replace("comprar", "alquiler")
             
         return url
+    
+    def parseFeature(self, features, feature_name, feature_name_selector, feature_value_selector):
+        index = next((i for i, x in enumerate(features) if feature_name in x.css(feature_name_selector).get()), None)
+        if index is not None:
+            return features[index].css(feature_value_selector).get()
+        return None
 
     def getLocationParsedComponent(self, location_data, component):
         index = next((x for i, x in enumerate(location_data["response"]) if "label" in location_data["response"][x] and component in location_data["response"][x]["label"]), None)

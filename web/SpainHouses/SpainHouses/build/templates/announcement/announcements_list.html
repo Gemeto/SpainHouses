@@ -98,7 +98,7 @@
         {% for offer in paginated_offers.docs %}
             <div class="property-card">
                 {% if offer.main_image %}
-                    <img src="{{ url_for('offers_img_static', directory=offer.ref, filename=offer.main_image) }}" alt="{{ offer.title }}" class="property-image">
+                    <img src="{{ url_for('offer_img_static', directory=offer.ref, filename=offer.main_image) }}" alt="{{ offer.title }}" class="property-image">
                 {% endif %}
                 <div class="property-details">
                     <h2 class="property-title">{{ offer.title }}</h2>
@@ -148,12 +148,12 @@
             switch(action) {
                 case 'previous':
                     {% if paginated_offers.has_prev %}
-                        url = '?page={{ current_page-1 }}';
+                        url = '?page={{ paginated_offers.current_page-1 }}';
                     {% endif %}
                     break;
                 case 'next':
                     {% if paginated_offers.has_next %}
-                        url = '?page={{ current_page+1 }}';
+                        url = '?page={{ paginated_offers.current_page+1 }}';
                     {% endif %}
                     break;
             }

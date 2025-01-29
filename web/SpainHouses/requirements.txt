@@ -1,6 +1,6 @@
 Flask
 pymongo[srv]
-Flask-PyMongo
+Flask-PyMongo==2.3.0
 Flask-Cors
 faker==0.8.13
 scikit-learn==1.6.0

@@ -1,6 +1,6 @@
 FROM python:3.12
-WORKDIR /SpainHouses
-COPY ./web /
+WORKDIR /web/SpainHouses
+COPY ./web /web
 COPY ./data /data
 COPY ./constants /constants
 COPY ./configuration /configuration

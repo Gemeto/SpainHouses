@@ -4,14 +4,13 @@ import dateparser
 import json
 from scrapy.exceptions import CloseSpider
 from realEstateCrawler.items import ImageItem, AnnouncementItem
-from offerParser import deleteSubstrings, getLocationParsedComponent
+from offerParser import deleteSubstrings, parseGeocodifyLocationComponents, parseFeature
 import sys
 sys.path.append("../")
 import constants.zoneFilters as zf
 import constants.announcementTypeFilters as tf
 
 class IdealistaSpider(scrapy.Spider):
-
     #Spider name
     name = "idealista"
 
@@ -33,9 +32,9 @@ class IdealistaSpider(scrapy.Spider):
 
     #Default price/size filters
     max_price_filter = 1000000
-    price_filter_interval = 50000
+    price_filter_interval = sys.maxsize
     max_size_filter = 2000
-    size_filter_interval = 50
+    size_filter_interval = sys.maxsize
 
     #Zone filters
     zone_filters = {
@@ -59,6 +58,7 @@ class IdealistaSpider(scrapy.Spider):
     }
 
     def start_requests(self):
+        self.announcement_type_filter = tf.VENTA
         if hasattr(self, "max_price_filter"):
             self.max_price_filter = self.max_price_filter
         if hasattr(self, "max_size_filter"):
@@ -148,15 +148,18 @@ class IdealistaSpider(scrapy.Spider):
         announcement_data["description"] = ''.join(response.css("div.comment div p::text").extract())
         announcement_data["price"] = int(response.css("span.info-data-price span::text").get().replace(".",""))
         announcement_data["ref"] = response.css("p.txt-ref::text").get().replace("\n", "")
-        announcement_data["energyConsumption"] = response.css("div.details-property_features:last-of-type span:nth-of-type(2)::text").get()
         header_features = response.css("div.info-features > span::text").getall()
         features = response.css("div.details-property_features:first-of-type li::text").getall()
 
-        announcement_data["rooms"] = self.parseFeature(header_features, "hab.")
+        announcement_data["energyConsumption"] = response.css("div.details-property_features:last-of-type span:nth-of-type(2)::text").get()
+        if announcement_data["energyConsumption"] is not None:
+            announcement_data["energyConsumption"] = announcement_data["energyConsumption"].replace(" kWh/m² año", "")
+
+        announcement_data["rooms"] = parseFeature(header_features, "hab.")
         if announcement_data["rooms"] is not None:
             announcement_data["rooms"] = int(announcement_data["rooms"].replace("hab.", ""))
 
-        announcement_data["constructed_m2"] = self.parseFeature(header_features, "m²")
+        announcement_data["constructed_m2"] = parseFeature(header_features, "m²")
         if announcement_data["constructed_m2"] is not None:
             announcement_data["constructed_m2"] = int(deleteSubstrings(announcement_data["constructed_m2"], [".", "m²"]))
 
@@ -164,7 +167,7 @@ class IdealistaSpider(scrapy.Spider):
         if announcement_data["energyCalification"] is not None:
             announcement_data["energyCalification"] = announcement_data["energyCalification"].replace("icon-energy-c-", "")
 
-        announcement_data["construction_date"] = self.parseFeature(features, "Construido")
+        announcement_data["construction_date"] = parseFeature(features, "Construido")
         if announcement_data["construction_date"] is not None:
             announcement_data["construction_date"] = datetime.date(int(announcement_data["construction_date"].replace("Construido en ", "")), 1, 1).isoformat()
 
@@ -204,12 +207,12 @@ class IdealistaSpider(scrapy.Spider):
         location_data = json.loads(response.body)
         announcement_data["location"] = {}
         announcement_data["location"]["text"] = announcement_data["locationStr"]
-        announcement_data["location"]["country"] = getLocationParsedComponent(location_data, "country")
-        announcement_data["location"]["state"] = getLocationParsedComponent(location_data, "state")
-        announcement_data["location"]["city"] = getLocationParsedComponent(location_data, "city")
-        announcement_data["location"]["postcode"] = getLocationParsedComponent(location_data, "postcode")
-        announcement_data["location"]["street"] = getLocationParsedComponent(location_data, "road")
-        announcement_data["location"]["number"] = getLocationParsedComponent(location_data, "house_number")
+        announcement_data["location"]["country"] = parseGeocodifyLocationComponents(location_data, "country")
+        announcement_data["location"]["state"] = parseGeocodifyLocationComponents(location_data, "state")
+        announcement_data["location"]["city"] = parseGeocodifyLocationComponents(location_data, "city")
+        announcement_data["location"]["postcode"] = parseGeocodifyLocationComponents(location_data, "postcode")
+        announcement_data["location"]["street"] = parseGeocodifyLocationComponents(location_data, "road")
+        announcement_data["location"]["number"] = parseGeocodifyLocationComponents(location_data, "house_number")
 
         yield AnnouncementItem(
             timestamp = datetime.datetime.now().isoformat(),
@@ -269,15 +272,3 @@ class IdealistaSpider(scrapy.Spider):
         if max_size_filter > self.max_size_filter:
             max_size_filter = self.max_size_filter
         return max_size_filter
-    
-    def parseFeature(self, features, feature_name):
-        index = next((i for i, x in enumerate(features) if feature_name in x), None)
-        if index is not None:
-            return features[index]
-        return None
-
-    def getLocationParsedComponent(self, location_data, component):
-        index = next((x for i, x in enumerate(location_data["response"]) if "label" in location_data["response"][x] and component in location_data["response"][x]["label"]), None)
-        if index is not None:
-            return location_data["response"][index]["value"]
-        return None

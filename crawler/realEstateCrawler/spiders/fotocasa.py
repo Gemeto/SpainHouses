@@ -1,5 +1,5 @@
 from realEstateCrawler.items import ImageItem, AnnouncementItem
-from offerParser import deleteSubstrings, getLocationParsedComponent
+from offerParser import deleteSubstrings, parseGeocodifyLocationComponents, parseFeatureCss
 import scrapy
 import datetime
 import dateparser
@@ -134,16 +134,16 @@ class FotocasaSpider(scrapy.Spider):
         features = response.css("div.re-DetailFeaturesList-featureContent")
         header_features = response.css("ul.re-DetailHeader-features li")
 
-        announcement_data["rooms"] = self.parseFeature(header_features, "hab", "span:nth-of-type(2)::text", "span:nth-of-type(2) span::text")
+        announcement_data["rooms"] = parseFeatureCss(header_features, "hab", "span:nth-of-type(2)::text", "span:nth-of-type(2) span::text")
         if announcement_data["rooms"] is not None:
             announcement_data["rooms"] = int(announcement_data["rooms"])
 
-        announcement_data["constructed_m2"] = self.parseFeature(header_features, "m²", "span:nth-of-type(2)::text", "span:nth-of-type(2) span::text")
+        announcement_data["constructed_m2"] = parseFeatureCss(header_features, "m²", "span:nth-of-type(2)::text", "span:nth-of-type(2) span::text")
         if announcement_data["constructed_m2"] is not None:
             announcement_data["constructed_m2"] = int(announcement_data["constructed_m2"])
 
         announcement_data["construction_date"] = None    
-        construction_date_string = self.parseFeature(features, "Antigüedad", "p.re-DetailFeaturesList-featureLabel", "div.re-DetailFeaturesList-featureValue::text")
+        construction_date_string = parseFeatureCss(features, "Antigüedad", "p.re-DetailFeaturesList-featureLabel", "div.re-DetailFeaturesList-featureValue::text")
         if construction_date_string is not None:
             if "+" in construction_date_string:
                 construction_date_string = construction_date_string.replace("+", "")
@@ -217,12 +217,12 @@ class FotocasaSpider(scrapy.Spider):
         location_data = json.loads(response.body)
         announcement_data["location"] = {}
         announcement_data["location"]["text"] = announcement_data["locationStr"]
-        announcement_data["location"]["country"] = getLocationParsedComponent(location_data, "country")
-        announcement_data["location"]["state"] = getLocationParsedComponent(location_data, "state")
-        announcement_data["location"]["city"] = getLocationParsedComponent(location_data, "city")
-        announcement_data["location"]["postcode"] = getLocationParsedComponent(location_data, "postcode")
-        announcement_data["location"]["street"] = getLocationParsedComponent(location_data, "road")
-        announcement_data["location"]["number"] = getLocationParsedComponent(location_data, "house_number")
+        announcement_data["location"]["country"] = parseGeocodifyLocationComponents(location_data, "country")
+        announcement_data["location"]["state"] = parseGeocodifyLocationComponents(location_data, "state")
+        announcement_data["location"]["city"] = parseGeocodifyLocationComponents(location_data, "city")
+        announcement_data["location"]["postcode"] = parseGeocodifyLocationComponents(location_data, "postcode")
+        announcement_data["location"]["street"] = parseGeocodifyLocationComponents(location_data, "road")
+        announcement_data["location"]["number"] = parseGeocodifyLocationComponents(location_data, "house_number")
 
         yield AnnouncementItem(
             timestamp = datetime.datetime.now().isoformat(),
@@ -284,15 +284,3 @@ class FotocasaSpider(scrapy.Spider):
             url = url.replace("comprar", "alquiler")
             
         return url
-    
-    def parseFeature(self, features, feature_name, feature_name_selector, feature_value_selector):
-        index = next((i for i, x in enumerate(features) if feature_name in x.css(feature_name_selector).get()), None)
-        if index is not None:
-            return features[index].css(feature_value_selector).get()
-        return None
-
-    def getLocationParsedComponent(self, location_data, component):
-        index = next((x for i, x in enumerate(location_data["response"]) if "label" in location_data["response"][x] and component in location_data["response"][x]["label"]), None)
-        if index is not None:
-            return location_data["response"][index]["value"]
-        return None

@@ -3,7 +3,7 @@ import datetime
 import dateparser
 import json
 from realEstateCrawler.items import ImageItem, AnnouncementItem
-from offerParser import deleteSubstrings, getLocationParsedComponent
+from offerParser import deleteSubstrings, parseGeocodifyLocationComponents, parseFeature
 import sys
 sys.path.append("../")
 import constants.zoneFilters as zf
@@ -124,11 +124,11 @@ class HabitacliaSpider(scrapy.Spider):
             for item in location_items:
                 announcement_data["locationStr"] = f"{announcement_data['locationStr']} {item.strip()}"
 
-            announcement_data["rooms"] = self.parseFeature(distribution, "habitaciones")
+            announcement_data["rooms"] = parseFeature(distribution, "habitaciones")
             if announcement_data["rooms"] is not None:
                 announcement_data["rooms"] = int(announcement_data["rooms"].replace(" habitaciones", ""))
 
-            announcement_data["constructed_m2"] = self.parseFeature(distribution, "Superficie")
+            announcement_data["constructed_m2"] = parseFeature(distribution, "Superficie")
             if announcement_data["constructed_m2"] is not None:
                 announcement_data["constructed_m2"] = int(deleteSubstrings(announcement_data["constructed_m2"], ["Superficie ", "m"]))
 
@@ -147,7 +147,7 @@ class HabitacliaSpider(scrapy.Spider):
             if announcement_data["owner"] is not None:
                 announcement_data["owner"] = announcement_data["owner"].replace("Contactar ", "")
 
-            announcement_data["construction_date"] = self.parseFeature(features, "Año construcción")
+            announcement_data["construction_date"] = parseFeature(features, "Año construcción")
             if announcement_data["construction_date"] is not None:
                 announcement_data["construction_date"] = datetime.date(int(announcement_data["construction_date"].replace("Año construcción ", "")), 1, 1).isoformat()
 
@@ -181,12 +181,12 @@ class HabitacliaSpider(scrapy.Spider):
         location_data = json.loads(response.body)
         announcement_data["location"] = {}
         announcement_data["location"]["text"] = announcement_data["locationStr"]
-        announcement_data["location"]["country"] = getLocationParsedComponent(location_data, "country")
-        announcement_data["location"]["state"] = getLocationParsedComponent(location_data, "state")
-        announcement_data["location"]["city"] = getLocationParsedComponent(location_data, "city")
-        announcement_data["location"]["postcode"] = getLocationParsedComponent(location_data, "postcode")
-        announcement_data["location"]["street"] = getLocationParsedComponent(location_data, "road")
-        announcement_data["location"]["number"] = getLocationParsedComponent(location_data, "house_number")
+        announcement_data["location"]["country"] = parseGeocodifyLocationComponents(location_data, "country")
+        announcement_data["location"]["state"] = parseGeocodifyLocationComponents(location_data, "state")
+        announcement_data["location"]["city"] = parseGeocodifyLocationComponents(location_data, "city")
+        announcement_data["location"]["postcode"] = parseGeocodifyLocationComponents(location_data, "postcode")
+        announcement_data["location"]["street"] = parseGeocodifyLocationComponents(location_data, "road")
+        announcement_data["location"]["number"] = parseGeocodifyLocationComponents(location_data, "house_number")
 
         yield AnnouncementItem(
             timestamp = datetime.datetime.now().isoformat(),
@@ -244,9 +244,3 @@ class HabitacliaSpider(scrapy.Spider):
                 url = f"{url}&m2={self.min_size_filter}"
 
             return url
-    
-    def parseFeature(self, features, feature_name):
-        index = next((i for i, x in enumerate(features) if feature_name in x), None)
-        if index is not None:
-            return features[index]
-        return None

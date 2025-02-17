@@ -32,26 +32,63 @@
         </div>
     </section>
 
-    <section class="description">
+    <section class="regular-section">
         <h2>Descripcion</h2>
         <p>{{ offer.description }}</p>
     </section>
 
-    <section class="agent-info">
-        <div>
-            <h3>{{ offer.owner }}</h3>
-            <h3>{{ offer.construction_date }}</h3>
-            <h3>{{ offer.energy_calification }}</h3>
-            <h3>{{ offer.location.text }}</h3>
+    <section class="regular-section">
+        <h2 class="features-title">Características del inmueble</h2>
+        <div class="info-panel">
+            {% if offer.rooms %}
+            <div>
+                <h3>Habitaciones</h3>
+                <p>{{ offer.rooms }}</p>
+            </div>
+            {% endif %}
+            {% if offer.constructed_m2 %}
+            <div>
+                <h3>Metros construidos</h3>
+                <p>{{ offer.constructed_m2 }} m2</p>
+            </div>
+            {% endif %}
+            {% if offer.energy_consumption %}
+            <div>
+                <h3>Fecha de construcción</h3>
+                <p>{{ offer.construction_date }}</p>
+            </div>
+            {% endif %}
+            {% if offer.energy_calification %}
+            <div>
+                <h3>Calificación energética</h3>
+                <p>{{ offer.energy_calification }}</p>
+            </div>
+            {% endif %}
+            {% if offer.energy_consumption %}
+            <div>
+                <h3>Consumo energético</h3>
+                <p>{{ offer.energy_consumption }} kWh/m² año</p>
+            </div>
+            {% endif %}
         </div>
+    </section>
+
+    <section class="regular-section">
+        <h2>Localización</h2>
+        <p>{{ offer.location.text }}</p>
+    </section>
+
+    <section class="regular-section">
+        <h2>Ofertante</h2>
+        <p>{{ offer.owner }}</p>
     </section>
 
     <canvas id="myChart" width="800" height="400"></canvas>
 
-    <a href="{{ offer.url }}" class="cta-button">Ver la oferta original</a>
+    <a href="{{ offer.url }}" class="cta-button">Ver la oferta original en {{offer.spider}}</a>
 
     <section class="similar-offers">
-        <h2>Similar Offers</h2>
+        <h2>Ofertas con imagenes similares</h2>
         <div class="offers-slider" id="offersSlider">
             {% for similar in offer.similar_offers %}
             <div class="offer-card" onclick="location.href='{{ similar.ref }}'">

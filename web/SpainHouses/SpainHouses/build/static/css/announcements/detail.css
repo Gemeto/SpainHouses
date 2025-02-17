@@ -60,7 +60,7 @@
     color: #3498db;
 }
 
-.description {
+.regular-section {
     background-color: #fff;
     padding: 1.5rem;
     border-radius: 8px;
@@ -68,15 +68,12 @@
     margin-bottom: 2rem;
 }
 
-.agent-info {
+.info-panel {
     display: flex;
-    align-items: center;
-    gap: 1rem;
+    flex-direction: column;
+    flex-wrap: wrap;
+    height: 300px;
     background-color: #fff;
-    padding: 1.5rem;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    margin-bottom: 2rem;
 }
 
 .agent-photo {
@@ -170,6 +167,7 @@
     .thumbnails {
         flex-direction: row;
         overflow-x: auto;
+        height: auto;
     }
 
     .thumbnail {
@@ -179,5 +177,9 @@
 
     .offer-card {
         flex: 0 0 250px;
+    }
+
+    .info-panel {
+        height: auto;
     }
 }

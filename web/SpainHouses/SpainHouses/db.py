@@ -51,6 +51,10 @@ def build_paginated_offers_query(filters):
             query["location.number"] = filters["number"]
         if "fullTextSearch" in filters:
             query["$text"] = {"$search": filters["fullTextSearch"]}
+        if "ref" in filters:
+            query["ref"] = filters["ref"]
+        if "spider" in filters:
+            query["spider"] = filters["spider"]
 
     return query
 
@@ -60,13 +64,13 @@ def get_paginated_offers(filters, page, offers_per_page):
 
     pipeline = [
         {"$match": query},
-        {"$sort": {"update_date": -1}},
         {"$group": {
                 "_id": "$ref",
                 "doc": {"$first": "$$ROOT"}
             }
         },
         {"$replaceRoot": {"newRoot": "$doc"}},
+        {"$sort": {"update_date": -1}},
         {"$skip": (page - 1) * offers_per_page},
         {"$limit": offers_per_page}
     ]
@@ -111,7 +115,17 @@ def get_offer(ref):
     return offer
     
 def get_offers_by_ref(refs):
-    return list(db.announcements.find({"ref": {"$in": refs}}))
+    pipeline = [
+        {"$match": {"ref": {"$in": refs}}},
+        {"$group": {
+                "_id": "$ref",
+                "doc": {"$first": "$$ROOT"}
+            }
+        },
+        {"$replaceRoot": {"newRoot": "$doc"}}
+    ]
+
+    return list(db.announcements.aggregate(pipeline))
 
 def get_offer_historic(ref):
     return list(db.announcements.find({"ref": ref}))

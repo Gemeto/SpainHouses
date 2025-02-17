@@ -77,6 +77,14 @@
                         <option value=2>En alquiler</option>
                     </select>
                 </div>
+                <div class="filter-item">
+                    <label for="spider">Plataforma</label>
+                    <input type="text" id="spider" name="spider" value="{{ get.spider }}">
+                </div>
+                <div class="filter-item">
+                    <label for="ref">Referencia</label>
+                    <input type="text" id="ref" name="ref" value="{{ get.ref }}">
+                </div>
             </div>
             <button type="submit" class="search-button">Buscar</button>
         </form>
@@ -84,19 +92,21 @@
 
     <main class="property-list" id="propertyList">
         {% for offer in paginated_offers.docs %}
-            <div class="property-card">
-                {% if offer.main_image %}
-                    <img src="{{ url_for('offer_img_static', directory=offer.ref, filename=offer.main_image) }}" alt="{{ offer.title }}" class="property-image">
-                {% endif %}
+            <div class="property-card" onclick="location.href='announcement/{{ offer.ref }}'">
+                <div class="property-image-container">
+                    {% if offer.main_image %}
+                            <img src="{{ url_for('offer_img_static', directory=offer.ref, filename=offer.main_image) }}" alt="{{ offer.title }}" class="property-image">
+                    {% endif %}
+                </div>
                 <div class="property-details">
                     <h2 class="property-title">{{ offer.title }}</h2>
                     <p class="property-price">{{ offer.price }}</p>
                     <div class="property-features">
-                        <span class="feature"><span class="feature-icon">🚿</span> {{ offer.rooms }} baths</span>
+                        <span class="feature"><span class="feature-icon">🛌</span> {{ offer.rooms }} hab.</span>
                         <span class="feature"><span class="feature-icon">📏</span> {{ offer.constructed_m2 }} m2</span>
                     </div>
-                    <a href="/announcement/{{ offer.ref }}" class="cta-button">View Details</a>
                 </div>
+                <a href="/announcement/{{ offer.ref }}" class="cta-button">Más detalles</a>
             </div>
         {%endfor%}
     </main>

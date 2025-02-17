@@ -1,5 +1,6 @@
 env
 .env
 data/**
+!data/mongodb/mongo-init.js
 !data/.gitkeep
 **/__pycache__

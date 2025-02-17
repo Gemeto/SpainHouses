@@ -86,9 +86,9 @@ vector_ids = set(np.unique(ids))
 # Find the IDs that are in the folder but not in the vector IDs
 missing_ids = folder_ids - vector_ids
 
-print(f"Total number of folders: {len(folder_ids)}")
-print(f"Total number of unique IDs in vectors: {len(vector_ids)}")
-print(f"Number of missing IDs: {len(missing_ids)}")
+print(f"Número total de ficheros: {len(folder_ids)}")
+print(f"Número total de IDs unicos en los vectores: {len(vector_ids)}")
+print(f"Número de IDs por procesar: {len(missing_ids)}")
 
 # Initialize the model (ensure your TensorFlow is configured to use the GPU)
 base_model = ResNet50(weights='imagenet', include_top=False, pooling='avg')

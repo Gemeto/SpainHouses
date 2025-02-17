@@ -5,7 +5,7 @@ import numpy as np
 
 def load_image_features(image_features_path):
     features = np.load(Path(image_features_path), mmap_mode='r')
-    return normalize(features) #TODO check if this is necessary
+    return normalize(features)
 
 def process_similar_offers(offer, features, ids):
     refs = find_similar_offer_images(offer['ref'], features, ids)
@@ -18,8 +18,7 @@ def find_similar_offer_images(selected_id, features, ids, top_n=3):
     image_features_index = np.where(ids == selected_id)[0]
 
     if len(image_features_index) > 0:
-        #Solo usamos la primera mitad del array porque se repiten
-        for features_index in np.array_split(image_features_index, 2)[0]:
+        for features_index in image_features_index:
             image_features = features[features_index]
 
             #Calculate cosine similarity
@@ -36,10 +35,8 @@ def find_similar_offer_images(selected_id, features, ids, top_n=3):
                     if float(similarities[0][idx]) < 0.77:
                         break
                     unique_similar_ids[similar_id] = similarities[0][idx]
-                if len(unique_similar_ids) >= top_n:
-                    break
 
-            if len(unique_similar_ids) >= top_n:
+            if len(unique_similar_ids) >= top_n * 2:
                 break
-    
-    return list(unique_similar_ids.keys())
+
+    return list(dict(sorted(unique_similar_ids.items(), key = lambda x : x[1], reverse = True)[:top_n]).keys())

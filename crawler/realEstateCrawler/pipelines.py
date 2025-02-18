@@ -22,12 +22,13 @@ class AnnouncementImagesPipeline(ImagesPipeline):
 
     #Overriding this method to manage each image file path
     def file_path(self, request, response=None, info=None, *, item=None):
+        spider_folder = item.get("spiderName")
         listing_folder = item.get("ref")
         file_ext = os.path.splitext(request.url)[1]
         file_ext = file_ext.split("?")[0]
         if file_ext == "":
             file_ext = self.DEFAULT_IMAGE_EXT
-        return f'{listing_folder}/{item.get("image_name")}{file_ext}'
+        return f'{spider_folder}/{listing_folder}/{item.get("image_name")}{file_ext}'
 
 class AnnouncementsMongoDBPipeline:
     collection_name = "announcements"

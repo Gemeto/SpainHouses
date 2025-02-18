@@ -63,7 +63,6 @@ class IdealistaSpider(scrapy.Spider):
             self.max_price_filter = self.max_price_filter
         if hasattr(self, "max_size_filter"):
             self.max_size_filter = self.max_size_filter
-
         if hasattr(self, "target_announcement_url"):
                 url = self.target_announcement_url
                 yield scrapy.Request(url, callback=self.parseAnnouncement, cb_kwargs=dict(listUrl="https://www.idealista.com/"),

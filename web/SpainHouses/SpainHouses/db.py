@@ -64,6 +64,7 @@ def get_paginated_offers(filters, page, offers_per_page):
 
     pipeline = [
         {"$match": query},
+        {"$sort": {"timestamp": -1}},
         {"$group": {
                 "_id": "$ref",
                 "doc": {"$first": "$$ROOT"}
@@ -102,7 +103,7 @@ def get_offer(ref):
         },
         {
             "$sort": {
-                "update_date": -1
+                "timestamp": -1
             }
         },
         {

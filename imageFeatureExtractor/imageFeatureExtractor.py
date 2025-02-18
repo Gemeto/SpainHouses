@@ -66,6 +66,7 @@ checkpoint_file_path = f'{base_image_features_path}/{checkpoint_file}'
 
 # Define the base path where the image folders are stored
 base_image_path = projectPaths.IMAGES_PATH
+spider_image_paths = os.listdir(base_image_path)
 
 features_list = []
 ids_list = []
@@ -78,17 +79,19 @@ features = np.load(features_path) if os.path.exists(features_path) else np.array
 ids = np.load(feature_ids_path) if os.path.exists(feature_ids_path) else np.array([])
 
 # List all folder names (IDs)
-folder_ids = set(os.listdir(base_image_path))
-
-# Convert the unique IDs from the ids array into a set
-vector_ids = set(np.unique(ids))
-
-# Find the IDs that are in the folder but not in the vector IDs
-missing_ids = folder_ids - vector_ids
-
-print(f"Número total de ficheros: {len(folder_ids)}")
-print(f"Número total de IDs unicos en los vectores: {len(vector_ids)}")
-print(f"Número de IDs por procesar: {len(missing_ids)}")
+folder_ids = {}
+vector_ids = {}
+missing_ids = {}
+for spider_image_path in spider_image_paths:
+    folder_ids[spider_image_path] = set(os.listdir(os.path.join(base_image_path, spider_image_path)))
+    # Convert the unique IDs from the ids array into a set
+    vector_ids[spider_image_path] = set(np.unique(ids))
+    # Find the IDs that are in the folder but not in the vector IDs
+    missing_ids[spider_image_path] = folder_ids[spider_image_path] - vector_ids[spider_image_path]
+    print(f"Spider: {spider_image_path}")
+    print(f"Number of folders: {len(folder_ids[spider_image_path])}")
+    print(f"Number of unique IDs: {len(vector_ids[spider_image_path])}")
+    print(f"Number of missing IDs: {len(missing_ids[spider_image_path])}")
 
 # Initialize the model (ensure your TensorFlow is configured to use the GPU)
 base_model = ResNet50(weights='imagenet', include_top=False, pooling='avg')
@@ -99,63 +102,74 @@ if os.path.exists(checkpoint_file_path):
     try:
         with open(checkpoint_file_path, 'r') as f:
             checkpoint = json.load(f)
+        start_spider = checkpoint.get('last_spider', None)
         start_folder = checkpoint.get('last_folder', None)
         start_image = checkpoint.get('last_image', None)
     except (json.JSONDecodeError, ValueError) as e:
         logging.warning(f"Checkpoint file is empty or corrupted: {e}. Starting from the beginning.")
         checkpoint = {}
+        start_spider = None
         start_folder = None
         start_image = None
 else:
     checkpoint = {}
+    start_spider = None
     start_folder = None
     start_image = None
 
 # Process only the missing folders
-missing_ids.add(start_folder) if start_folder else None
-missing_folders = sorted(list(missing_ids))
-start_index = missing_folders.index(start_folder) if start_folder else 0
+missing_ids = dict(sorted(missing_ids.items()))
+skip = True
+print(missing_ids)
+for spider, ids in missing_ids.items():
+    if start_spider and start_spider != spider:
+        continue
+    elif skip and not start_spider or start_spider == spider:
+        skip = False
+    ids.add(start_folder) if start_folder and start_spider and start_spider == spider else None
+    missing_folders = sorted(list(ids))
+    start_index = missing_folders.index(start_folder) if start_folder else 0
 
-for folder_index in range(start_index, len(missing_folders)):
-    folder_name = missing_folders[folder_index]
-    folder_path = os.path.join(base_image_path, folder_name)
-    if os.path.isdir(folder_path):
-        logging.info(f"Processing folder {folder_index + 1}/{len(missing_folders)}: {folder_name}")
-        images = list_dir_with_retry(folder_path)
-        # Skip this folder if it couldn't be accessed
-        if images is None:
-            continue
-        start_img_index = images.index(start_image) if folder_name == start_folder and start_image else 0
-        for image_index in range(start_img_index, len(images)):
-            image_name = images[image_index]
-            image_path = os.path.join(folder_path, image_name)
-            logging.info(f"Processing image {image_name} in folder {folder_name}...")
-            features = extract_features(image_path, model)
-            if features is not None:
-                features_list.append(features)
-                ids_list.append(folder_name)
-                processed_images += 1
+    for folder_index in range(start_index, len(missing_folders)):
+        folder_name = missing_folders[folder_index]
+        folder_path = os.path.join(base_image_path, spider, folder_name)
+        if os.path.isdir(folder_path):
+            logging.info(f"Processing {spider} folder {folder_index + 1}/{len(missing_folders)}: {folder_name}")
+            images = list_dir_with_retry(folder_path)
+            # Skip this folder if it couldn't be accessed
+            if images is None:
+                continue
+            start_img_index = images.index(start_image) if folder_name == start_folder and start_image else 0
+            for image_index in range(start_img_index, len(images)):
+                image_name = images[image_index]
+                image_path = os.path.join(folder_path, image_name)
+                logging.info(f"Processing {spider} image {image_name} in folder {folder_name}...")
+                features = extract_features(image_path, model)
+                if features is not None:
+                    features_list.append(features)
+                    ids_list.append(f'{spider}~{missing_folders[folder_index]}')
+                    processed_images += 1
 
-        # Save checkpoint and stop if the limit is reached
+            # Save checkpoint and stop if the limit is reached
+            if processed_images >= images_to_process:
+                checkpoint = {'last_spider': spider, 'last_folder': folder_name, 'last_image': image_name}
+                if not os.path.exists(checkpoint_file_path):
+                    os.makedirs(os.path.dirname(checkpoint_file_path), exist_ok=True)
+                with open(checkpoint_file_path, 'w') as f:
+                    json.dump(checkpoint, f)
+                logging.info(f"Processed {processed_images} images. Checkpoint saved. Exiting.")
+
+                # Convert to numpy arrays for appending
+                features_array = np.array(features_list)
+                ids_array = np.array(ids_list)
+
+                # Append new features and IDs to existing files
+                append_to_npy(features_path, features_array)
+                append_to_npy(feature_ids_path, ids_array)
+
+                break # Exit the loop after saving the checkpoint
         if processed_images >= images_to_process:
-            checkpoint = {'last_folder': folder_name, 'last_image': image_name}
-            if not os.path.exists(checkpoint_file_path):
-                os.makedirs(os.path.dirname(checkpoint_file_path), exist_ok=True)
-            with open(checkpoint_file_path, 'w') as f:
-                json.dump(checkpoint, f)
-            logging.info(f"Processed {processed_images} images. Checkpoint saved. Exiting.")
-
-            # Convert to numpy arrays for appending
-            features_array = np.array(features_list)
-            ids_array = np.array(ids_list)
-
-            # Append new features and IDs to existing files
-            append_to_npy(features_path, features_array)
-            append_to_npy(feature_ids_path, ids_array)
-
-            break # Exit the loop after saving the checkpoint
-    if processed_images >= images_to_process:
-        break # Exit the outer loop if processing limit is reached
+            break # Exit the outer loop if processing limit is reached
 
 # Convert to numpy arrays for appending
 features_array = np.array(features_list)

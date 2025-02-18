@@ -1,4 +1,5 @@
 {% extends 'templates/announcement/base.html' %}
+{% import 'templates/announcement/components/announcement_card.html' as macros %}
 
 {% block css %}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/announcements/list.css') }}">
@@ -92,23 +93,8 @@
 
     <main class="property-list" id="propertyList">
         {% for offer in paginated_offers.docs %}
-            <div class="property-card" onclick="location.href='announcement/{{ offer.ref }}'">
-                <div class="property-image-container">
-                    {% if offer.main_image %}
-                            <img src="{{ url_for('offer_img_static', directory=offer.ref, filename=offer.main_image) }}" alt="{{ offer.title }}" class="property-image">
-                    {% endif %}
-                </div>
-                <div class="property-details">
-                    <h2 class="property-title">{{ offer.title }}</h2>
-                    <p class="property-price">{{ offer.price }}</p>
-                    <div class="property-features">
-                        <span class="feature"><span class="feature-icon">🛌</span> {{ offer.rooms }} hab.</span>
-                        <span class="feature"><span class="feature-icon">📏</span> {{ offer.constructed_m2 }} m2</span>
-                    </div>
-                </div>
-                <a href="/announcement/{{ offer.ref }}" class="cta-button">Más detalles</a>
-            </div>
-        {%endfor%}
+            {{ macros.render_announcement_card(offer,"/announcement/" ~ offer.ref, "Más detalles", "/announcement/" ~ offer.ref) }}
+        {% endfor %}
     </main>
 
     <div class="pagination">

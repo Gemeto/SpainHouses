@@ -8,7 +8,7 @@ def load_image_features(image_features_path):
     return normalize(features)
 
 def process_similar_offers(offer, features, ids):
-    refs = find_similar_offer_images(offer['ref'], features, ids)
+    refs = find_similar_offer_images(f'{offer['spider']}~{offer['ref']}', features, ids)
     return refs
 
 def find_similar_offer_images(selected_id, features, ids, top_n=3):
@@ -39,4 +39,9 @@ def find_similar_offer_images(selected_id, features, ids, top_n=3):
             if len(unique_similar_ids) >= top_n * 2:
                 break
 
-    return list(dict(sorted(unique_similar_ids.items(), key = lambda x : x[1], reverse = True)[:top_n]).keys())
+    parsed_unique_similar_ids = {}
+    for key, value in unique_similar_ids.items():
+        newKey = key.split("~")[1]
+        parsed_unique_similar_ids[newKey] = unique_similar_ids[key]
+
+    return list(dict(sorted(parsed_unique_similar_ids.items(), key = lambda x : x[1], reverse = True)[:top_n]).keys())

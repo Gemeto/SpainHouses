@@ -1,4 +1,5 @@
 {% extends 'templates/announcement/base.html' %}
+{% import 'templates/announcement/components/announcement_card.html' as macros %}
 
 {% block css %}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/announcements/detail.css') }}">
@@ -12,16 +13,17 @@
 
     <section class="gallery">
         {% if offer.main_image %}
-            <img src="{{ url_for('offer_img_static', directory=offer.ref, filename=offer.main_image) }}" alt="Main view of the house" class="main-image" id="mainImage">
+            <img src="{{ url_for('offer_img_static', spider=offer.spider, directory=offer.ref, filename=offer.main_image) }}" alt="Main view of the house" class="main-image" id="mainImage">
         {% endif %}
         <div class="thumbnails">
             {% for img in offer.images %}
-                <img src="{{ url_for('offer_img_static', directory=offer.ref, filename=img) }}" class="thumbnail">
+                <img src="{{ url_for('offer_img_static', spider=offer.spider, directory=offer.ref, filename=img) }}" class="thumbnail">
             {% endfor %}
         </div>
     </section>
 
-    <section class="property-details">
+    <section class="property-details-summary">
+        <span class="detail-icon offer-status"></span>
         <div class="detail">
             <span class="detail-icon">🛏️</span>
             <span>{{ offer.rooms }} Habitaciones</span>
@@ -91,15 +93,7 @@
         <h2>Ofertas con imagenes similares</h2>
         <div class="offers-slider" id="offersSlider">
             {% for similar in offer.similar_offers %}
-            <div class="offer-card" onclick="location.href='{{ similar.ref }}'">
-                <img src="{{ url_for('offer_img_static', directory=similar.ref, filename=similar.main_image) }}" alt="{{ similar.title }}" class="offer-image">
-                <div class="offer-details">
-                    <h3 class="offer-title">{{ similar.title }}</h3>
-                    <p class="offer-price">{{ similar.title }} €</p>
-                    <p>{{ similar.rooms }} rooms, {{ similar.constructed_m2 }} m2</p>
-                    <a href="{{ similar.url }}" class="cta-button">Ver la oferta original</a>
-                </div>
-            </div>
+                {{ macros.render_announcement_card(similar, similar.ref, "Ver la oferta original", similar.url) }}
             {% endfor %}
             {% if not offer.similar_offers %}
                 <p>No se han encontrado ofertas similares.</p>
@@ -144,6 +138,26 @@
                 mainImage.src = this.src.replace('120', '400');
                 mainImage.alt = this.alt;
             });
+        });
+    </script>
+
+    <script>
+        async function checkLinkStatus() {
+            try {
+                const response = await fetch('{{ offer.url }}');
+                return response.ok;
+            } catch (error) {
+                return false;
+            }
+        }
+
+        checkLinkStatus().then(isActive => {
+            const statusElement = document.querySelector('.offer-status');
+            if (isActive) {
+                statusElement.textContent = '✔️';
+            } else {
+                statusElement.textContent = '❌';
+            }
         });
     </script>
 {% endblock %}

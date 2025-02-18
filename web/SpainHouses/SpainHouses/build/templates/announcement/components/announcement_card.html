@@ -1,0 +1,34 @@
+{% macro render_announcement_card(offer, cardLink, buttonText, buttonLink) %}
+<div class="property-card" onclick="location.href='{{ cardLink }}'">
+    <div class="property-image-container">
+        {% if offer.main_image %}
+                <img src="{{ url_for('offer_img_static', spider=offer.spider, directory=offer.ref, filename=offer.main_image) }}" alt="{{ offer.title }}" class="property-image">
+        {% endif %}
+    </div>
+    <div class="property-details">
+        <h2 class="property-title">{{ offer.title }}</h2>
+        <p class="property-price">{{ offer.price }}</p>
+        <div class="property-features">
+            <span class="feature">
+                <span class="feature-icon">🛌</span> 
+                {% if offer.rooms %}
+                    {{offer.rooms}}
+                {% else %}
+                    {{offer.rooms}}
+                {% endif %}
+                hab.
+            </span>
+            <span class="feature">
+                <span class="feature-icon">📏</span>
+                {% if offer.constructed_m2 %}
+                    {{offer.constructed_m2}}
+                {% else %}
+                    {{offer.constructed_m2}} 
+                {% endif %}
+                m2
+            </span>
+        </div>
+    </div>
+    <a href="{{ buttonLink }}" class="cta-button">{{ buttonText }}</a>
+</div>
+{% endmacro %}

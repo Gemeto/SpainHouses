@@ -1,4 +1,5 @@
 scrapy==2.11.2
+pymongo==4.11.1
 psycopg2==2.9.10
 dateparser==1.2.0
 seleniumbase==4.33.5

@@ -110,7 +110,7 @@ import logging
 class SeleniumBaseDownloadMiddleware: #Custom middleware based on scrapy-selenium middleware, in order to use seleniumbase
     
     def __init__(self):
-        with SB(uc=True, headless=True, ad_block=True) as sb:
+        with SB(uc=True, headless=True, ad_block=True, driver_version=132) as sb: #driver_version is a temporary fix due to issues with the official chrome drivers currently with the v133
                 self.sb = sb
         #Disabling some logging that is not really useful if you're not debugging
         logging.getLogger('selenium').setLevel(logging.WARNING)

@@ -28,8 +28,6 @@ class IdealistaSpider(scrapy.Spider):
     #Spider starting urls
     start_url = "https://www.idealista.com"
     
-    geocodify_url = "https://api.geocodify.com/v2/parse?api_key=lCWart5tdT5gPVkKrFFdLioAo892C9WF&address=" #TODO delete my api key from the url
-
     #Default price/size filters
     max_price_filter = 1000000
     price_filter_interval = sys.maxsize
@@ -194,7 +192,7 @@ class IdealistaSpider(scrapy.Spider):
             img_number = img_number + 1
         announcement_data["image_urls"] = ", ".join(image_urls) if image_urls is not None else None
 
-        yield scrapy.Request(self.geocodify_url + announcement_data["locationStr"],
+        yield scrapy.Request(self.settings.get('GEOCODIFY_API_URL') + announcement_data["locationStr"],
             dont_filter=True,
             priority=5,
             callback=self.parseAnnouncementLocation,

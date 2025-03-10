@@ -41,5 +41,7 @@ MONGO_USER = os.getenv('MONGO_USER')
 MONGO_PASS = os.getenv('MONGO_PASS')
 MONGO_DB = os.getenv('MONGO_DB')
 
+#Geocodify settings
+GEOCODIFY_API_URL = f"https://api.geocodify.com/v2/parse?api_key={os.getenv('GEOCODIFY_API_KEY')}&address="
 #Debug settings
 DUPEFILTER_DEBUG = True

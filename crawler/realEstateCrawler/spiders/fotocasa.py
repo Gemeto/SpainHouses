@@ -28,8 +28,6 @@ class FotocasaSpider(scrapy.Spider):
     #Spider starting urls
     start_url = "https://www.fotocasa.es/es/comprar/viviendas/espana/todas-las-zonas/l?sortType=publicationDate"
 
-    geocodify_url = "https://api.geocodify.com/v2/parse?api_key=lCWart5tdT5gPVkKrFFdLioAo892C9WF&address=" #TODO delete my api key from the url
-
     #Zone filters
     zone_filters = {
         zf.ANDALUCIA: ["malaga", "almeria", "cadiz", "cordoba", "granada", "huelva", "jaen", "malaga", "sevilla"],
@@ -171,7 +169,7 @@ class FotocasaSpider(scrapy.Spider):
         askForImages = response.css("div.re-DetailMosaic-ask")
         if askForImages is not None:
             announcement_data["image_urls"] = None
-            yield scrapy.Request(self.geocodify_url + announcement_data["locationStr"],
+            yield scrapy.Request(self.settings.get('GEOCODIFY_API_URL') + announcement_data["locationStr"],
                 dont_filter=True,
                 priority=5,
                 callback=self.parseAnnouncementLocation,
@@ -205,7 +203,7 @@ class FotocasaSpider(scrapy.Spider):
             image_urls = ", ".join(image_urls)
         announcement_data["image_urls"] = image_urls
 
-        yield scrapy.Request(self.geocodify_url + announcement_data["locationStr"],
+        yield scrapy.Request(self.settings.get('GEOCODIFY_API_URL') + announcement_data["locationStr"],
             dont_filter=True,
             priority=5,
             callback=self.parseAnnouncementLocation,

@@ -48,6 +48,15 @@ announcement_type_filter_names = {
 def main():
     num_spiders = len(spiders)
 
+    parser = argparse.ArgumentParser(description="Crawler de anuncios inmobiliarios")
+    parser.add_argument("-t", "--type", help = "Tipo de ofertas")
+    parser.add_argument("-z", "--zone", help = "Filtro de zona")
+    parser.add_argument("-mp", "--minPrice", help = "Filtro de precio mínimo")
+    parser.add_argument("-Mp", "--maxPrice", help = "Filtro de precio máximo")
+    parser.add_argument("-ms", "--minSurface", help = "Filtro de superficie mínima")
+    parser.add_argument("-Ms", "--maxSurface", help = "Filtro de superficie máxima")
+    args = parser.parse_args()
+
     if os.path.exists("./jobs"):
         continue_process = input("Quiere continuar con el proceso anterior? (s/n): ")
         if continue_process.lower() == "s":
@@ -61,23 +70,14 @@ def main():
             return
         else:
             shutil.rmtree("./jobs")
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-t", "--type", help = "Tipo de ofertas")
-    parser.add_argument("-z", "--zone", help = "Filtro de zona")
-    parser.add_argument("-mp", "--minPrice", help = "Filtro de precio mínimo")
-    parser.add_argument("-Mp", "--maxPrice", help = "Filtro de precio máximo")
-    parser.add_argument("-ms", "--minSurface", help = "Filtro de superficie mínima")
-    parser.add_argument("-Ms", "--maxSurface", help = "Filtro de superficie máxima")
-    args = parser.parse_args()
     
     if args.type and args.zone and args.minPrice and args.maxPrice and args.minSurface and args.maxSurface:
-        announcement_type_filter = args.type
-        zone_filter = args.zone
-        min_price_filter = args.minPrice
-        max_price_filter = args.maxPrice
-        min_size_filter = args.minSurface
-        max_size_filter = args.maxSurface
+        announcement_type_filter = int(args.type)
+        zone_filter = int(args.zone)
+        min_price_filter = int(args.minPrice)
+        max_price_filter = int(args.maxPrice)
+        min_size_filter = int(args.minSurface)
+        max_size_filter = int(args.maxSurface)
     else:
         announcement_type_filter, zone_filter, min_price_filter, max_price_filter, min_size_filter, max_size_filter = requestInputFilters()
 

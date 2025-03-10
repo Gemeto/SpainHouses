@@ -101,7 +101,7 @@ To launch this tools you'll need to install:
 * Google Chrome
 * Python 3.12
 * Docker desktop
-* Cuda>=12.3
+* Cuda>=12.3 (Only to run the image comparator without Docker)
 
 ### Installation
 
@@ -116,6 +116,7 @@ To launch this tools you'll need to install:
 	MONGO_USER = "your_username"
 	MONGO_PASS = "your_pass"
 	MONGO_HOST = "your_hostname"
+  GEOCODIFY_API_KEY = "your_geocodify_api_key"
 	```
 4. Create a venv inside './crawler', activate it and install requirements (Recommended)
 	```sh
@@ -148,7 +149,7 @@ To launch this tools you'll need to install:
 * Execute the crawler module (docker compose db service is REQUIRED)
 	```sh
  	cd./crawler
-	python ./main.py
+	python ./main.py (use --help to see available params)
 	```
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 

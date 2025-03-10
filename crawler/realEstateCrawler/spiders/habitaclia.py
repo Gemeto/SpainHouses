@@ -28,8 +28,6 @@ class HabitacliaSpider(scrapy.Spider):
     #Spider starting urls
     start_url = "https://www.habitaclia.com/"
 
-    geocodify_url = "https://api.geocodify.com/v2/parse?api_key=lCWart5tdT5gPVkKrFFdLioAo892C9WF&address=" #TODO delete my api key from the url
-
     #Zone filters
     zone_filters = {
         zf.ANDALUCIA: ["malaga", "almeria", "cadiz", "cordoba", "granada", "huelva", "jaen", "malaga", "sevilla"],
@@ -169,7 +167,7 @@ class HabitacliaSpider(scrapy.Spider):
             announcement_data["url"] = response.request.url
             announcement_data["listUrl"] = listUrl
 
-            yield scrapy.Request(self.geocodify_url + announcement_data["locationStr"],
+            yield scrapy.Request(self.settings.get('GEOCODIFY_API_URL') + announcement_data["locationStr"],
                 dont_filter=True,
                 priority=5,
                 callback=self.parseAnnouncementLocation,

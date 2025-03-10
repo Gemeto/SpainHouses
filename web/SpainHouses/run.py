@@ -15,7 +15,7 @@ if __name__ == "__main__":
     db = os.getenv('MONGO_DB')
     if os.getenv('MONGO_HOST') is None:
         host = 'localhost'
-        load_dotenv(dotenv_path=projectPaths.ENV_FILE_PATH) #When reading env file this way the connection url doesn't work on windows
+        load_dotenv(dotenv_path=projectPaths.ENV_FILE_PATH) #When reading env file this way the connection url doesn't work properly on windows
         user = os.getenv('MONGO_USER')
         password = os.getenv('MONGO_PASS')
         db = os.getenv('MONGO_DB')

@@ -56,7 +56,6 @@ class IdealistaSpider(scrapy.Spider):
     }
 
     def start_requests(self):
-        self.announcement_type_filter = tf.VENTA
         if hasattr(self, "max_price_filter"):
             self.max_price_filter = self.max_price_filter
         if hasattr(self, "max_size_filter"):

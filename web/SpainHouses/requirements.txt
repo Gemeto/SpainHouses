@@ -1,5 +1,6 @@
 Flask
 pymongo[srv]
+dotenv==0.9.9
 Flask-PyMongo==2.3.0
 Flask-Cors
 faker==0.8.13
